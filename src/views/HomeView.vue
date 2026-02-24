@@ -3,11 +3,11 @@
     <NavBar />
     <HeroSection />
     <AboutSection />
-    <ServicesSection />
+    <!-- <ServicesSection />
     <CatalogSection />
     <GallerySection />
     <MapSection />
-    <FooterSection />
+    <FooterSection /> -->
   </div>
 </template>
 
@@ -15,11 +15,11 @@
 import NavBar from '@/components/Home/Navigation/NavBar.vue'
 import HeroSection from '@/components/Home/Sections/HeroSection.vue'
 import AboutSection from '@/components/Home/Sections/AboutSection.vue'
-import ServicesSection from '@/components/Home/Sections/ServicesSection.vue'
-import CatalogSection from '@/components/Home/Sections/CatalogSection.vue'
-import GallerySection from '@/components/Home/Sections/GallerySection.vue'
-import MapSection from '@/components/Home/Sections/MapSection.vue'
-import FooterSection from '@/components/Home/Footer/FooterSection.vue'
+// import ServicesSection from '@/components/Home/Sections/ServicesSection.vue'
+// import CatalogSection from '@/components/Home/Sections/CatalogSection.vue'
+// import GallerySection from '@/components/Home/Sections/GallerySection.vue'
+// import MapSection from '@/components/Home/Sections/MapSection.vue'
+// import FooterSection from '@/components/Home/Footer/FooterSection.vue'
 
 export default {
   name: 'HomeView',
@@ -27,11 +27,11 @@ export default {
     NavBar,
     HeroSection,
     AboutSection,
-    ServicesSection,
-    CatalogSection,
-    GallerySection,
-    MapSection,
-    FooterSection
+    // ServicesSection,
+    // CatalogSection,
+    // GallerySection,
+    // MapSection,
+    // FooterSection
   }
 }
 </script>
