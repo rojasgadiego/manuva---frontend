@@ -5,6 +5,7 @@
 
     <!-- Sidebar -->
     <aside class="sidebar" @mouseenter="expandSidebar" @mouseleave="collapseSidebar">
+
       <div class="sidebar-header">
         <div class="logo-container">
           <div class="logo-icon">M</div>
@@ -162,6 +163,19 @@ export default {
       //   icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
       //   roles: ['admin', 'editor', 'usuario']
       // }
+      //Admin
+      // Admin
+      // { name: 'Dashboard', path: '/dashboard', icon: '🏠', roles: ['admin'] }, //estadisticas basicas
+      // { name: 'Salidas', path: '/salidas', icon: '🛶', roles: ['admin'] },
+      // { name: 'Socios', path: '/socios', icon: '👥', roles: ['admin'] },
+      // { name: 'Equipamiento', path: '/equipamiento', icon: '🛟', roles: ['admin'] },
+      // { name: 'Reportes', path: '/reportes', icon: '📊', roles: ['admin'] },
+      // { name: 'Configuración', path: '/configuracion', icon: '⚙️', roles: ['admin'] },
+
+      //Remador
+      { name: 'Dashboard', path: '/dashboard', icon: '🏠' },
+      { name: 'Agendar salida', path: '/agenda', icon: '🛶' },
+      { name: 'Mi perfil', path: '/perfil', icon: '👤'},
     ]
 
     const filteredMenuItems = computed(() => {
@@ -314,7 +328,7 @@ export default {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background-color: #743cfa;
+  background-color: #56bed8;
   color: white;
   display: flex;
   align-items: center;
@@ -334,7 +348,7 @@ export default {
   font-size: 1.2rem;
   font-weight: 600;
   white-space: nowrap;
-  color: #743cfa;
+  color: #69e1e6;
   font-family: 'Pacifico', cursive, sans-serif;
   letter-spacing: 0.5px;
 }
@@ -461,7 +475,7 @@ export default {
 .user-avatar {
   width: 32px;
   height: 32px;
-  background-color: #9240b3;
+  background-color: #47adc7;
   color: white;
   border-radius: 50%;
   display: flex;

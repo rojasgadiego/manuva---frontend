@@ -4,22 +4,14 @@ import store from '@/store'
 // Importar vistas
 import Home from '@/views/HomeView.vue'
 import Login from '@/views/autenticacion/LoginView.vue'
-import Register from '@/views/autenticacion/RegisterView.vue'
+//import Register from '@/views/autenticacion/RegisterView.vue'
 import NotFound from '@/views/NotFoundView.vue'
 import Forbidden from '@/views/ForbiddenView.vue'
 import DashboardView from '@/views/Private/DashboardView.vue'
+import AgendaView from '@/views/Private/AgendaView.vue'
 
 // Definir rutas
 const routes = [
-    {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: DashboardView,
-    meta: {
-      requiresAuth: true,
-      title: 'Panel Principal'
-    }
-  },
   // Rutas públicas (no requieren autenticación)
   // TODO: crear una vista pubica la cual contendra contenido (Quienes somos, Servicio, Catalogo y galeria)
   {
@@ -40,15 +32,15 @@ const routes = [
       title: 'Iniciar Sesión'
     }
   },
-  {
-    path: '/register',
-    name: 'Register',
-    component: Register,
-    meta: { 
-      requiresAuth: false,
-      title: 'Registro'
-    }
-  },
+  // {
+  //   path: '/register',
+  //   name: 'Register',
+  //   component: Register,
+  //   meta: { 
+  //     requiresAuth: false,
+  //     title: 'Registro'
+  //   }
+  // },
   // Rutas autenticadas (requieren login)
   {
     path: '/dashboard',
@@ -57,6 +49,15 @@ const routes = [
     meta: {
       requiresAuth: true,
       title: 'Panel Principal'
+    }
+  },
+  {
+    path: '/agenda',
+    name: 'Agenda',
+    component: AgendaView,
+    meta: {
+      requiresAuth: true,
+      title: 'Salidas'
     }
   },
   // // Ruta para configuración (solo admin)

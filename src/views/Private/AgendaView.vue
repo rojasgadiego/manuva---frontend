@@ -1,16 +1,77 @@
 <template>
   <AppLayout>
-    
+    <div class="dashboard-content">
+
+      <!-- CALENDARIO -->
+      <div class="calendar-card">
+        <div class="calendar-header">
+          <button @click="prevMonth">‹</button>
+          <h2>{{ monthYearLabel }}</h2>
+          <button @click="nextMonth">›</button>
+        </div>
+
+        <div class="calendar-grid">
+          <!-- Nombres de días -->
+          <div v-for="d in weekDays" :key="d" class="calendar-day-name">
+            {{ d }}
+          </div>
+
+          <!-- Días -->
+          <div
+            v-for="day in calendarDays"
+            :key="day.date"
+            class="calendar-day"
+            :class="{
+              today: day.isToday,
+              selected: isSelected(day.date),
+              inactive: !day.currentMonth,
+              past: day.isPast
+            }"
+            @click="!day.isPast && openModal(day)"
+          >
+            <div class="day-header">
+              <span>{{ day.day }}</span>
+              <span v-if="day.salidas.length" class="dot"></span>
+            </div>
+
+            <div class="salidas-preview">
+              <span
+                v-for="(s, i) in day.salidas.slice(0, 2)"
+                :key="i"
+                class="salida-chip"
+                :class="s.cupos === 0 ? 'full' : 'available'"
+              >
+                {{ s.hora }}
+              </span>
+
+              <span v-if="day.salidas.length > 2" class="more">
+                +{{ day.salidas.length - 2 }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL -->
+      <DayAgendaModal
+        :visible="modalVisible"
+        :date="selectedDay?.date || ''"
+        :salidas="selectedDay?.salidas || []"
+        @close="modalVisible = false"
+      />
+
+    </div>
   </AppLayout>
 </template>
 
 <script>
 import { defineComponent, ref, computed } from 'vue'
 import AppLayout from '@/components/Layout/AppLayout.vue'
+import DayAgendaModal from '@/components/schedule/DayAgendaModal.vue'
 
 export default defineComponent({
   name: 'AgendaCanoasDashboard',
-  components: { AppLayout },
+  components: { AppLayout, DayAgendaModal },
   setup() {
 
     const currentMonth = ref(new Date())
