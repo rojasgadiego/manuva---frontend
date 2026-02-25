@@ -6,8 +6,9 @@
     <!-- <ServicesSection />
     <CatalogSection />
     <GallerySection />
+     -->
     <MapSection />
-    <FooterSection /> -->
+    <FooterSection />
   </div>
 </template>
 
@@ -18,8 +19,8 @@ import AboutSection from '@/components/Home/Sections/AboutSection.vue'
 // import ServicesSection from '@/components/Home/Sections/ServicesSection.vue'
 // import CatalogSection from '@/components/Home/Sections/CatalogSection.vue'
 // import GallerySection from '@/components/Home/Sections/GallerySection.vue'
-// import MapSection from '@/components/Home/Sections/MapSection.vue'
-// import FooterSection from '@/components/Home/Footer/FooterSection.vue'
+import MapSection from '@/components/Home/Sections/MapSection.vue'
+import FooterSection from '@/components/Home/Footer/FooterSection.vue'
 
 export default {
   name: 'HomeView',
@@ -30,8 +31,8 @@ export default {
     // ServicesSection,
     // CatalogSection,
     // GallerySection,
-    // MapSection,
-    // FooterSection
+    MapSection,
+    FooterSection
   }
 }
 </script>

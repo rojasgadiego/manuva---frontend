@@ -100,7 +100,7 @@ const router = createRouter({
 // Guard de navegación global para protección de rutas
 router.beforeEach(async (to, from, next) => {
   // Actualizar título de la página
-  document.title = to.meta.title ? `${to.meta.title} | Colibrí` : 'Colibrí'
+  document.title = to.meta.title ? `${to.meta.title} | Manuva` : 'Manuva'
 
   if (to.name === 'Login' && store.getters['auth/isAuthenticated']) {
     next({ name: 'Dashboard' })
