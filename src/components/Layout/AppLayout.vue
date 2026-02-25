@@ -26,13 +26,13 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="user-avatar-container" v-if="isSidebarCollapsed">
+        <!-- <div class="user-avatar-container" v-if="isSidebarCollapsed">
           <div class="user-avatar">{{ userInitials }}</div>
         </div>
         <div class="user-info" v-if="!isSidebarCollapsed">
           <div class="user-name">{{ currentUser ? currentUser.email : 'Usuario' }}</div>
           <div class="user-role">{{ userRoles.length > 0 ? userRoles[0] : 'Rol no asignado' }}</div>
-        </div>
+        </div> -->
         <button class="logout-button" @click="logout" :title="isSidebarCollapsed ? 'Cerrar sesión' : ''">
           <span class="logout-icon">⏻</span>
           <span v-if="!isSidebarCollapsed" class="logout-text">Cerrar sesión</span>
@@ -53,17 +53,6 @@
         <div class="breadcrumb">
           {{ currentRouteName }}
         </div>
-
-        <!-- Header actions solo con carrito -->
-        <div class="header-actions">
-          <!-- Carrito (solo mostrar si hay items) -->
-          <button v-if="cart.items.length > 0" class="cart-summary-btn" @click="toggleCartDetails"
-            :title="`Carrito: ${cart.totalItems} items`">
-            <span class="cart-icon">🛒</span>
-            <span class="cart-badge">{{ cart.totalItems }}</span>
-            <span v-if="!isMobile" class="cart-total">{{ formatCurrency(cart.total) }}</span>
-          </button>
-        </div>
       </header>
 
       <main class="content-wrapper">
@@ -71,69 +60,6 @@
       </main>
     </div>
 
-    <!-- Notificación de escaneo exitoso -->
-    <transition name="scan-notification-slide">
-      <div v-if="showScanNotification" class="scan-notification success">
-        <div class="notification-content">
-          <span class="notification-icon">✅</span>
-          <div class="notification-text">
-            <div class="product-name">{{ lastScannedProduct?.nombre }}</div>
-            <div class="notification-message">Agregado al carrito</div>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- Notificación de producto no encontrado -->
-    <transition name="scan-notification-slide">
-      <div v-if="showErrorNotification" class="scan-notification error">
-        <div class="notification-content">
-          <span class="notification-icon">❌</span>
-          <div class="notification-text">
-            <div class="product-code">{{ lastScannedCode }}</div>
-            <div class="notification-message">Producto no encontrado</div>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- Detalles del carrito expandido -->
-    <transition name="cart-details-slide">
-      <div v-if="showCartDetails && cart.items.length > 0" class="cart-details">
-        <div class="cart-header">
-          <h4>Carrito de Compras</h4>
-          <button class="clear-cart" @click="clearCart">Limpiar</button>
-        </div>
-
-        <div class="cart-items">
-          <div v-for="item in cart.items" :key="item.code" class="cart-item">
-            <div class="item-info">
-              <span class="item-name">{{ item.product.nombre }}</span>
-              <span class="item-code">{{ item.code }}</span>
-            </div>
-            <div class="item-quantity">
-              <button @click="updateQuantity(item.code, item.quantity - 1)">-</button>
-              <span>{{ item.quantity }}</span>
-              <button @click="updateQuantity(item.code, item.quantity + 1)">+</button>
-            </div>
-            <div class="item-price">{{ formatCurrency(item.product.precio_unitario * item.quantity) }}</div>
-            <button class="remove-item" @click="removeFromCart(item.code)">×</button>
-          </div>
-        </div>
-
-        <div class="cart-footer">
-          <div class="cart-total-section">
-            <strong>Total: {{ formatCurrency(cart.total) }}</strong>
-          </div>
-          <div class="cart-actions">
-            <button class="btn-secondary" @click="saveCart">Guardar</button>
-            <button class="btn-primary" @click="processCart">Procesar</button>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <NotificationContainer />
   </div>
 </template>
 
@@ -141,258 +67,22 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter, useRoute } from 'vue-router'
-import { useScanner } from '@/composables/useScanner'
-import { useNotifications } from '@/composables/useNotifications'
-import NotificationContainer from '../UI/NotificationContainer.vue'
 
 export default {
   name: 'AppLayout',
   components: {
-    NotificationContainer
   },
 
   setup() {
     const store = useStore()
     const router = useRouter()
     const route = useRoute()
-    const { warning } = useNotifications()
-    const { activate, deactivate, isActive: scannerActive, lastScannedCode } = useScanner()
 
     // Estados existentes del sidebar
     const isSidebarCollapsed = ref(true)
     const autoCollapseEnabled = ref(true)
     const isMobile = ref(false)
     let collapseTimer = null
-
-    // Estados del scanner (simplificados)
-    const showScanNotification = ref(false)
-    const showErrorNotification = ref(false)
-    const lastScannedProduct = ref(null)
-    let notificationTimer = null
-
-    // Estados del carrito
-    const cart = ref({
-      items: [],
-      totalItems: 0,
-      total: 0
-    })
-    const showCartDetails = ref(false)
-
-    // Función para obtener headers de autorización
-    const getAuthHeaders = () => {
-      try {
-        const token = localStorage.getItem('token')
-        return {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : undefined
-        }
-      } catch (error) {
-        console.error('Error al obtener headers:', error)
-        return { 'Content-Type': 'application/json' }
-      }
-    }
-
-    // Buscar producto por código (simplificada)
-    const searchProductByCode = async (code) => {
-      try {
-        // Buscar en lotes primero
-        const lotesResponse = await fetch(`http://localhost:3000/api/lotes/codigo/${code}`, {
-          headers: getAuthHeaders()
-        })
-
-        if (lotesResponse.ok) {
-          const lotesResult = await lotesResponse.json()
-          if (lotesResult.status === 'success' && lotesResult.data) {
-            return {
-              ...lotesResult.data.producto,
-              precio: lotesResult.data.producto.precio_unitario,
-              codigo: lotesResult.data.codigo_interno,
-              stock: lotesResult.data.cantidad_actual,
-              fecha_caducidad: lotesResult.data.fecha_caducidad,
-              lote: lotesResult.data
-            }
-          }
-        }
-
-        return null
-      } catch (err) {
-        console.error('Error al buscar producto:', err)
-        return null
-      }
-    }
-
-    // Mostrar notificación personalizada
-    const showNotification = (type, product = null, code = null) => {
-      // Limpiar notificación anterior
-      if (notificationTimer) {
-        clearTimeout(notificationTimer)
-        showScanNotification.value = false
-        showErrorNotification.value = false
-      }
-
-      if (type === 'success' && product) {
-        lastScannedProduct.value = product
-        showScanNotification.value = true
-      } else if (type === 'error' && code) {
-        lastScannedCode.value = code
-        showErrorNotification.value = true
-      }
-
-      // Auto-ocultar después de 2 segundos
-      notificationTimer = setTimeout(() => {
-        showScanNotification.value = false
-        showErrorNotification.value = false
-      }, 2000)
-    }
-
-    // Manejar escaneo detectado (simplificado y automático)
-    const handleScanDetected = async (code) => {
-      try {
-        // Limpiar el código de caracteres problemáticos
-        let cleanCode = String(code).trim()
-        console.log('Código escaneado:', cleanCode)
-
-        // Tratamiento del código escaneado
-        let processedCode = cleanCode
-        
-        // Si el código tiene el formato LOTE'LT250001'221961 o LOTELT250001221961
-        if (cleanCode.startsWith('LOTE') && cleanCode.length > 4) {
-          // Extraer la parte después de "LOTE"
-          let withoutLote = cleanCode.substring(4) // Quita "LOTE"
-          
-          // Si hay comillas, extraer lo que está entre ellas
-          const quotesMatch = withoutLote.match(/'([^']+)'/)
-          if (quotesMatch) {
-            processedCode = quotesMatch[1] // Extrae lo que está entre comillas
-          } 
-          // Si no hay comillas, extraer LT + 6 dígitos (8 caracteres total)
-          else if (withoutLote.startsWith('LT') && withoutLote.length >= 8) {
-            processedCode = withoutLote.substring(0, 8) // LT + 6 dígitos
-          }
-        }
-
-        const product = await searchProductByCode(processedCode)
-
-        if (product) {
-          // Agregar automáticamente al carrito
-          const cartItem = {
-            code: processedCode,
-            product: product,
-            quantity: 1
-          }
-          
-          addToCart(cartItem)
-          showNotification('success', product)
-        } else {
-          showNotification('error', null, processedCode)
-        }
-      } catch (error) {
-        console.error('Error en handleScanDetected:', error)
-        showNotification('error', null)
-      }
-    }
-
-    // Watch para detectar escaneos
-    watch(lastScannedCode, (newCode) => {
-      if (newCode) {
-        handleScanDetected(newCode)
-      }
-    })
-
-    // Funciones del carrito
-    const updateCartTotals = () => {
-      cart.value.totalItems = cart.value.items.reduce((sum, item) => sum + item.quantity, 0)
-      cart.value.total = cart.value.items.reduce((sum, item) => sum + (item.product.precio_unitario * item.quantity), 0)
-    }
-
-    const addToCart = (item) => {
-      const existingItem = cart.value.items.find(cartItem => cartItem.code === item.code)
-
-      if (existingItem) {
-        existingItem.quantity += item.quantity
-      } else {
-        cart.value.items.push(item)
-      }
-
-      updateCartTotals()
-      saveCart()
-    }
-
-    const removeFromCart = (code) => {
-      const index = cart.value.items.findIndex(item => item.code === code)
-      if (index > -1) {
-        cart.value.items.splice(index, 1)
-        updateCartTotals()
-        saveCart()
-      }
-    }
-
-    const updateQuantity = (code, newQuantity) => {
-      if (newQuantity <= 0) {
-        removeFromCart(code)
-        return
-      }
-
-      const item = cart.value.items.find(cartItem => cartItem.code === code)
-      if (item) {
-        item.quantity = newQuantity
-        updateCartTotals()
-        saveCart()
-      }
-    }
-
-    const clearCart = () => {
-      cart.value.items = []
-      updateCartTotals()
-      showCartDetails.value = false
-      saveCart()
-      warning('Carrito limpiado')
-    }
-
-    const toggleCartDetails = () => {
-      showCartDetails.value = !showCartDetails.value
-    }
-
-    const saveCart = () => {
-      try {
-        localStorage.setItem('shopping_cart', JSON.stringify(cart.value.items))
-      } catch (err) {
-        console.error('Error al guardar carrito:', err)
-      }
-    }
-
-    const loadSavedCart = () => {
-      try {
-        const savedCart = localStorage.getItem('shopping_cart')
-        if (savedCart) {
-          cart.value.items = JSON.parse(savedCart)
-          updateCartTotals()
-        }
-      } catch (err) {
-        console.error('Error al cargar carrito guardado:', err)
-      }
-    }
-
-    const processCart = () => {
-      if (cart.value.items.length === 0) {
-        warning('El carrito está vacío')
-        return
-      }
-
-      // Navegar a checkout o procesar venta
-      router.push('/ventas/nueva', { state: { cart: cart.value } })
-    }
-
-    // Función para formatear moneda
-    const formatCurrency = (value) => {
-      const numero = parseFloat(value)
-      if (isNaN(numero)) return '$0.00'
-
-      return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN'
-      }).format(numero)
-    }
 
     // Funciones existentes del sidebar
     const checkMobile = () => {
@@ -506,16 +196,6 @@ export default {
       checkMobile()
       window.addEventListener('resize', checkMobile)
 
-      // Activar scanner automáticamente al cargar
-      activate({
-        scanDelay: 100,
-        minScanLength: 8,
-        maxScanLength: 50,
-        scanCooldown: 1000
-      })
-
-      // Cargar carrito guardado
-      loadSavedCart()
 
       // Resto de la lógica existente del sidebar
       const savedState = localStorage.getItem('sidebarState')
@@ -534,12 +214,6 @@ export default {
     onUnmounted(() => {
       window.removeEventListener('resize', checkMobile)
       clearTimeout(collapseTimer)
-      if (notificationTimer) {
-        clearTimeout(notificationTimer)
-      }
-      if (scannerActive.value) {
-        deactivate()
-      }
     })
 
     // Watches existentes
@@ -568,14 +242,6 @@ export default {
       currentRouteName,
       filteredMenuItems,
 
-      // Estados del scanner y carrito (simplificados)
-      showScanNotification,
-      showErrorNotification,
-      lastScannedProduct,
-      lastScannedCode,
-      cart,
-      showCartDetails,
-
       // Métodos existentes del sidebar
       expandSidebar,
       collapseSidebar,
@@ -583,16 +249,6 @@ export default {
       isActive,
       logout,
       closeMobileSidebar,
-
-      // Métodos del carrito
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      clearCart,
-      toggleCartDetails,
-      saveCart,
-      processCart,
-      formatCurrency
     }
   }
 }

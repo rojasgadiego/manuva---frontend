@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="dashboard-content">
 
-      <!-- CALENDARIO / AGENDA -->
+      <!-- CALENDARIO -->
       <div class="calendar-card">
         <div class="calendar-header">
           <button @click="prevMonth">‹</button>
@@ -11,10 +11,12 @@
         </div>
 
         <div class="calendar-grid">
+          <!-- Nombres de días -->
           <div v-for="d in weekDays" :key="d" class="calendar-day-name">
             {{ d }}
           </div>
 
+          <!-- Días -->
           <div
             v-for="day in calendarDays"
             :key="day.date"
@@ -22,9 +24,10 @@
             :class="{
               today: day.isToday,
               selected: isSelected(day.date),
-              inactive: !day.currentMonth
+              inactive: !day.currentMonth,
+              past: day.isPast
             }"
-            @click="openModal(day)"
+            @click="!day.isPast && openModal(day)"
           >
             <div class="day-header">
               <span>{{ day.day }}</span>
@@ -49,13 +52,14 @@
         </div>
       </div>
 
-      <!-- MODAL DE DETALLE DEL DÍA -->
+      <!-- MODAL -->
       <DayAgendaModal
         :visible="modalVisible"
         :date="selectedDay?.date || ''"
         :salidas="selectedDay?.salidas || []"
         @close="modalVisible = false"
       />
+
     </div>
   </AppLayout>
 </template>
@@ -69,40 +73,22 @@ export default defineComponent({
   name: 'AgendaCanoasDashboard',
   components: { AppLayout, DayAgendaModal },
   setup() {
+
     const currentMonth = ref(new Date())
     const selectedDay = ref(null)
     const modalVisible = ref(false)
 
     const weekDays = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
 
-    // ===== SALIDAS (MOCK) =====
     const salidas = ref({
       '2026-02-14': [
         { hora: '08:00', cupos: 2 },
         { hora: '08:30', cupos: 1 },
-        { hora: '09:00', cupos: 0 },
-        { hora: '09:30', cupos: 2 },
-        { hora: '10:00', cupos: 1 },
-        { hora: '10:30', cupos: 3 },
-        { hora: '11:00', cupos: 2 },
-        { hora: '11:30', cupos: 3 },
-        { hora: '14:00', cupos: 5 },
-        { hora: '16:00', cupos: 8 },
+        { hora: '09:00', cupos: 0 }
       ],
       '2026-02-15': [
         { hora: '08:00', cupos: 1 },
-        { hora: '09:00', cupos: 2 },
-        { hora: '10:00', cupos: 5 },
-        { hora: '10:30', cupos: 2 },
-        { hora: '15:30', cupos: 2 }
-      ],
-      '2026-02-16': [
-        { hora: '09:00', cupos: 4 },
-        { hora: '09:30', cupos: 2 },
-        { hora: '11:00', cupos: 3 },
-        { hora: '12:00', cupos: 0 },
-        { hora: '14:00', cupos: 6 },
-        { hora: '16:00', cupos: 2 },
+        { hora: '09:00', cupos: 2 }
       ]
     })
 
@@ -117,48 +103,68 @@ export default defineComponent({
       currentMonth.value.toLocaleDateString('es-ES',{month:'long', year:'numeric'})
     )
 
-    const calendarDays = computed(() => {
-      const start = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth(),1)
-      const end = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth()+1,0)
-      const startDay = start.getDay() === 0 ? 6 : start.getDay()-1
-      const days = []
-
-      for(let i=startDay;i>0;i--){
-        const d = new Date(start)
-        d.setDate(d.getDate()-i)
-        days.push(buildDay(d,false))
-      }
-
-      for(let i=1;i<=end.getDate();i++){
-        const d = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth(),i)
-        days.push(buildDay(d,true))
-      }
-
-      return days
-    })
-
     const buildDay = (date,currentMonthFlag) => {
       const key = formatDate(date)
+
+      const today = new Date()
+      today.setHours(0,0,0,0)
+
+      const compareDate = new Date(date)
+      compareDate.setHours(0,0,0,0)
+
       return {
         date: key,
         day: date.getDate(),
         currentMonth: currentMonthFlag,
         isToday: key === formatDate(new Date()),
+        isPast: compareDate < today,
         salidas: salidas.value[key] || []
       }
     }
 
+    const calendarDays = computed(() => {
+      const year = currentMonth.value.getFullYear()
+      const month = currentMonth.value.getMonth()
+
+      const start = new Date(year, month, 1)
+      const startDay = start.getDay() === 0 ? 6 : start.getDay() - 1
+
+      const firstVisibleDay = new Date(year, month, 1 - startDay)
+
+      const days = []
+
+      for (let i = 0; i < 42; i++) {
+        const current = new Date(firstVisibleDay)
+        current.setDate(firstVisibleDay.getDate() + i)
+
+        const isCurrentMonth = current.getMonth() === month
+
+        days.push(buildDay(current, isCurrentMonth))
+      }
+
+      return days
+    })
+
     const prevMonth = () => {
-      currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth()-1,1)
+      currentMonth.value = new Date(
+        currentMonth.value.getFullYear(),
+        currentMonth.value.getMonth() - 1,
+        1
+      )
     }
 
     const nextMonth = () => {
-      currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth()+1,1)
+      currentMonth.value = new Date(
+        currentMonth.value.getFullYear(),
+        currentMonth.value.getMonth() + 1,
+        1
+      )
     }
 
     const isSelected = (date) => selectedDay.value?.date === date
 
     const openModal = (day) => {
+      if (day.isPast) return
       selectedDay.value = day
       modalVisible.value = true
     }
@@ -184,14 +190,18 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   gap: 20px;
+  flex: 1;
+  min-height: 0;
 }
 
-/* ===== CALENDARIO ===== */
 .calendar-card {
-  background: white;
+  background: rgb(203, 230, 238);
   border-radius: 14px;
   padding: 18px;
   box-shadow: 0 6px 20px rgba(0,0,0,.08);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .calendar-header {
@@ -212,7 +222,9 @@ export default defineComponent({
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: auto repeat(6, 1fr);
   gap: 8px;
+  flex: 1;
 }
 
 .calendar-day-name {
@@ -226,9 +238,10 @@ export default defineComponent({
   background: #f7fafc;
   border-radius: 10px;
   padding: 8px;
-  min-height: 95px;
   cursor: pointer;
   transition: all .15s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .calendar-day:hover {
@@ -246,6 +259,18 @@ export default defineComponent({
 
 .calendar-day.inactive {
   opacity: .4;
+}
+
+/* 🔒 Bloqueado */
+.calendar-day.past {
+  opacity: 0.35;
+  background: #eceff1;
+  cursor: not-allowed;
+}
+
+.calendar-day.past:hover {
+  transform: none;
+  background: #eceff1;
 }
 
 .day-header {
@@ -288,5 +313,20 @@ export default defineComponent({
 .more {
   font-size: .65rem;
   color: #555;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .calendar-card {
+    flex: none;
+  }
+
+  .calendar-grid {
+    grid-template-rows: auto;
+  }
+
+  .calendar-day {
+    min-height: 80px;
+  }
 }
 </style>

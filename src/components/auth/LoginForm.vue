@@ -159,7 +159,7 @@ export default {
         await store.dispatch('auth/login', {
           email: formData.email,
           password: formData.password,
-          remember: formData.remember
+          //remember: formData.remember
         })
         router.push(route.query.redirect || '/dashboard')
       } catch (error) {

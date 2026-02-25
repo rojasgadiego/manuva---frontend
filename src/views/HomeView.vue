@@ -20,7 +20,7 @@ import AboutSection from '@/components/Home/Sections/AboutSection.vue'
 // import CatalogSection from '@/components/Home/Sections/CatalogSection.vue'
 // import GallerySection from '@/components/Home/Sections/GallerySection.vue'
 import MapSection from '@/components/Home/Sections/MapSection.vue'
-import FooterSection from '@/components/Home/Footer/FooterSection.vue'
+import FooterSection from '@/components/Home/Sections/FooterSection.vue'
 
 export default {
   name: 'HomeView',
