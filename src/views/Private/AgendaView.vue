@@ -1,10 +1,9 @@
 <template>
   <AppLayout>
     <div class="dashboard-content">
-
       <div class="scene">
 
-        <!-- ─── CALENDARIO ─────────────────────────── -->
+        <!--  CALENDARIO -->
         <Transition name="slide-left">
           <div v-if="view === 'calendar'" class="panel calendar-panel">
 
@@ -51,7 +50,7 @@
           </div>
         </Transition>
 
-        <!-- ─── FORMULARIO ────────────────────────── -->
+        <!--  FORMULARIO  -->
         <Transition name="slide-right">
           <div v-if="view === 'form'" class="panel form-panel">
 
@@ -150,16 +149,6 @@
                     </div>
                   </div>
 
-                  <div class="equip-item">
-                    <div class="equip-info">
-                      <span class="equip-name">Casco</span>
-                      <span class="equip-sub">Opcional según zona</span>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" v-model="form.casco" />
-                      <span class="switch-track"></span>
-                    </label>
-                  </div>
                 </section>
 
                 <section class="form-section">
@@ -234,11 +223,11 @@ export default defineComponent({
   components: { AppLayout },
 
   setup() {
-    // ── Vista activa ──────────────────────────────
+    // Vista activa 
     const view = ref('calendar')   // 'calendar' | 'form'
     const selectedDay = ref(null)
 
-    // ── Calendario ────────────────────────────────
+    // Calendario
     const currentMonth = ref(new Date())
     const weekDays = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
 
@@ -306,7 +295,7 @@ export default defineComponent({
       view.value = 'calendar'
     }
 
-    // ── Formulario ────────────────────────────────
+    // Formulario
     const times = []
     for (let h = 8; h <= 19; h++) {
       times.push(`${String(h).padStart(2,'0')}:00`)
