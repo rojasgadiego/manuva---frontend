@@ -1,271 +1,171 @@
 <template>
   <AppLayout>
-    
+    <div class="dashboard-content">
+      <div class="scene">
+
+        <!-- CALENDARIO -->
+        <Transition name="slide-left">
+          <CalendarPanel
+            v-if="view === 'calendar'"
+            :calendar-days="calendarDays"
+            :month-year-label="monthYearLabel"
+            :selected-date="selectedDay?.date ?? null"
+            @prev-month="prevMonth"
+            @next-month="nextMonth"
+            @select-day="selectDay"
+          />
+        </Transition>
+
+        <!-- FORMULARIO -->
+        <Transition name="slide-right">
+          <FormularioAgenda
+            v-if="view === 'form'"
+            :selected-day="selectedDay"
+            @go-back="goBack"
+            @submit="handleSubmit"
+          />
+        </Transition>
+
+      </div>
+    </div>
   </AppLayout>
 </template>
 
 <script>
 import { defineComponent, ref, computed } from 'vue'
-import AppLayout from '@/components/Layout/AppLayout.vue'
+import AppLayout        from '@/components/Layout/AppLayout.vue'
+import CalendarPanel    from '@/components/Agenda/Calendarpanel.vue'
+import FormularioAgenda from '@/components/Agenda/FormularioAgenda.vue'
 
 export default defineComponent({
   name: 'AgendaCanoasDashboard',
-  components: { AppLayout },
+  components: { AppLayout, CalendarPanel, FormularioAgenda },
+
   setup() {
-
-    const currentMonth = ref(new Date())
+    // ── Vista activa ──────────────────────────────
+    const view        = ref('calendar')   // 'calendar' | 'form'
     const selectedDay = ref(null)
-    const modalVisible = ref(false)
 
-    const weekDays = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
+    // ── Calendario ────────────────────────────────
+    const currentMonth = ref(new Date())
 
+    /**
+     * Mock de salidas existentes.
+     * En producción esto vendría del store / API.
+     */
     const salidas = ref({
-      '2026-02-14': [
-        { hora: '08:00', cupos: 2 },
-        { hora: '08:30', cupos: 1 },
-        { hora: '09:00', cupos: 0 }
-      ],
-      '2026-02-15': [
-        { hora: '08:00', cupos: 1 },
-        { hora: '09:00', cupos: 2 }
-      ]
+      '2026-02-14': [{ hora: '08:00', cupos: 2 }, { hora: '08:30', cupos: 1 }, { hora: '09:00', cupos: 0 }],
+      '2026-02-15': [{ hora: '08:00', cupos: 1 }, { hora: '09:00', cupos: 2 }],
+      '2026-02-27': [{ hora: '10:00', cupos: 3 }],
     })
 
     const formatDate = (d) => {
-      const year = d.getFullYear()
-      const month = String(d.getMonth() + 1).padStart(2,'0')
-      const day = String(d.getDate()).padStart(2,'0')
-      return `${year}-${month}-${day}`
+      const y   = d.getFullYear()
+      const m   = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
     }
 
     const monthYearLabel = computed(() =>
-      currentMonth.value.toLocaleDateString('es-ES',{month:'long', year:'numeric'})
+      currentMonth.value.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
     )
 
-    const buildDay = (date,currentMonthFlag) => {
-      const key = formatDate(date)
-
-      const today = new Date()
-      today.setHours(0,0,0,0)
-
-      const compareDate = new Date(date)
-      compareDate.setHours(0,0,0,0)
-
+    const buildDay = (date, currentMonthFlag) => {
+      const key   = formatDate(date)
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const cmp   = new Date(date); cmp.setHours(0, 0, 0, 0)
       return {
         date: key,
         day: date.getDate(),
         currentMonth: currentMonthFlag,
         isToday: key === formatDate(new Date()),
-        isPast: compareDate < today,
-        salidas: salidas.value[key] || []
+        isPast: cmp < today,
+        salidas: salidas.value[key] || [],
       }
     }
 
     const calendarDays = computed(() => {
-      const year = currentMonth.value.getFullYear()
+      const year  = currentMonth.value.getFullYear()
       const month = currentMonth.value.getMonth()
-
-      const start = new Date(year, month, 1)
+      const start    = new Date(year, month, 1)
       const startDay = start.getDay() === 0 ? 6 : start.getDay() - 1
-
-      const firstVisibleDay = new Date(year, month, 1 - startDay)
-
+      const firstVisible = new Date(year, month, 1 - startDay)
       const days = []
-
       for (let i = 0; i < 42; i++) {
-        const current = new Date(firstVisibleDay)
-        current.setDate(firstVisibleDay.getDate() + i)
-
-        const isCurrentMonth = current.getMonth() === month
-
-        days.push(buildDay(current, isCurrentMonth))
+        const cur = new Date(firstVisible)
+        cur.setDate(firstVisible.getDate() + i)
+        days.push(buildDay(cur, cur.getMonth() === month))
       }
-
       return days
     })
 
-    const prevMonth = () => {
-      currentMonth.value = new Date(
-        currentMonth.value.getFullYear(),
-        currentMonth.value.getMonth() - 1,
-        1
-      )
-    }
+    const prevMonth = () =>
+      currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() - 1, 1)
 
-    const nextMonth = () => {
-      currentMonth.value = new Date(
-        currentMonth.value.getFullYear(),
-        currentMonth.value.getMonth() + 1,
-        1
-      )
-    }
+    const nextMonth = () =>
+      currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() + 1, 1)
 
-    const isSelected = (date) => selectedDay.value?.date === date
-
-    const openModal = (day) => {
-      if (day.isPast) return
+    // ── Navegación ────────────────────────────────
+    const selectDay = (day) => {
       selectedDay.value = day
-      modalVisible.value = true
+      view.value = 'form'
+    }
+
+    const goBack = () => {
+      view.value = 'calendar'
+    }
+
+    /**
+     * Recibe el payload emitido por BookingFormPanel.
+     * Aquí puedes hacer dispatch al store o llamar a la API.
+     */
+    const handleSubmit = (payload) => {
+      console.log('Nueva reserva:', payload)
+      goBack()
     }
 
     return {
-      weekDays,
-      calendarDays,
-      monthYearLabel,
-      prevMonth,
-      nextMonth,
-      isSelected,
-      openModal,
-      modalVisible,
-      selectedDay
+      view, selectedDay, goBack, selectDay, handleSubmit,
+      calendarDays, monthYearLabel, prevMonth, nextMonth,
     }
-  }
+  },
 })
 </script>
 
 <style scoped>
+* { box-sizing: border-box; }
+
 .dashboard-content {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
   flex: 1;
   min-height: 0;
 }
 
-.calendar-card {
-  background: rgb(203, 230, 238);
-  border-radius: 14px;
-  padding: 18px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.08);
+/* Contenedor que recorta los paneles fuera de vista */
+.scene {
+  position: relative;
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.calendar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
+/* ── Transición: calendario sale por izquierda ── */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity   0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.slide-left-enter-from { transform: translateX(-100%); opacity: 0; }
+.slide-left-leave-to   { transform: translateX(-100%); opacity: 0; }
 
-.calendar-header button {
-  border: none;
-  background: #e3f2fd;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
+/* ── Transición: formulario entra por derecha ── */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity   0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, 1fr);
-  gap: 8px;
-  flex: 1;
-}
-
-.calendar-day-name {
-  text-align: center;
-  font-size: .75rem;
-  font-weight: 600;
-  color: #607d8b;
-}
-
-.calendar-day {
-  background: #f7fafc;
-  border-radius: 10px;
-  padding: 8px;
-  cursor: pointer;
-  transition: all .15s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.calendar-day:hover {
-  background: #e1f5fe;
-  transform: translateY(-2px);
-}
-
-.calendar-day.today {
-  border: 2px solid #0288d1;
-}
-
-.calendar-day.selected {
-  background: #b3e5fc;
-}
-
-.calendar-day.inactive {
-  opacity: .4;
-}
-
-/* 🔒 Bloqueado */
-.calendar-day.past {
-  opacity: 0.35;
-  background: #eceff1;
-  cursor: not-allowed;
-}
-
-.calendar-day.past:hover {
-  transform: none;
-  background: #eceff1;
-}
-
-.day-header {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 600;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  background: #0288d1;
-  border-radius: 50%;
-}
-
-.salidas-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
-}
-
-.salida-chip {
-  font-size: .65rem;
-  padding: 3px 7px;
-  border-radius: 12px;
-}
-
-.salida-chip.available {
-  background: #e0f2f1;
-  color: #00695c;
-}
-
-.salida-chip.full {
-  background: #ffebee;
-  color: #c62828;
-  text-decoration: line-through;
-}
-
-.more {
-  font-size: .65rem;
-  color: #555;
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .calendar-card {
-    flex: none;
-  }
-
-  .calendar-grid {
-    grid-template-rows: auto;
-  }
-
-  .calendar-day {
-    min-height: 80px;
-  }
-}
+.slide-right-enter-from { transform: translateX(100%); opacity: 0; }
+.slide-right-leave-to   { transform: translateX(100%); opacity: 0; }
 </style>
