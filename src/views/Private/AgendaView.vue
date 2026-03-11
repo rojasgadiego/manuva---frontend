@@ -3,7 +3,6 @@
     <div class="dashboard-content">
       <div class="scene">
 
-        <!-- CALENDARIO -->
         <Transition name="slide-left">
           <CalendarPanel
             v-if="view === 'calendar'"
@@ -16,7 +15,6 @@
           />
         </Transition>
 
-        <!-- FORMULARIO -->
         <Transition name="slide-right">
           <FormularioAgenda
             v-if="view === 'form'"
@@ -32,33 +30,60 @@
 </template>
 
 <script>
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, ref, computed, onMounted } from 'vue'
 import AppLayout        from '@/components/Layout/AppLayout.vue'
 import CalendarPanel    from '@/components/Agenda/Calendarpanel.vue'
 import FormularioAgenda from '@/components/Agenda/FormularioAgenda.vue'
+import salidaService    from '@/services/salida.service'
 
 export default defineComponent({
   name: 'AgendaCanoasDashboard',
   components: { AppLayout, CalendarPanel, FormularioAgenda },
 
   setup() {
-    // ── Vista activa ──────────────────────────────
-    const view        = ref('calendar')   // 'calendar' | 'form'
+    const view        = ref('calendar')
     const selectedDay = ref(null)
-
-    // ── Calendario ────────────────────────────────
     const currentMonth = ref(new Date())
 
-    /**
-     * Mock de salidas existentes.
-     * En producción esto vendría del store / API.
-     */
-    const salidas = ref({
-      '2026-02-14': [{ hora: '08:00', cupos: 2 }, { hora: '08:30', cupos: 1 }, { hora: '09:00', cupos: 0 }],
-      '2026-02-15': [{ hora: '08:00', cupos: 1 }, { hora: '09:00', cupos: 2 }],
-      '2026-02-27': [{ hora: '10:00', cupos: 3 }],
-    })
+    // Salidas agrupadas por fecha: { 'YYYY-MM-DD': [{ hora, cupos }] }
+    const salidasPorFecha = ref({})
+    const cargando = ref(false)
 
+    // ── Cargar salidas próximas desde la API ──────
+    const cargarSalidas = async () => {
+      cargando.value = true
+      try {
+        const response = await salidaService.getProximas()
+        const salidas = response.data?.data ?? []
+
+        // Agrupar por fecha y transformar al formato del calendario
+        const agrupadas = {}
+        salidas.forEach(s => {
+          const fecha = s.fechaHoraProgramada?.substring(0, 10) // 'YYYY-MM-DD'
+          if (!fecha) return
+
+          const hora = s.fechaHoraProgramada?.substring(11, 16) // 'HH:MM'
+
+          // Calcular cupos disponibles
+          const capacidadMax = s.canoa?.tipoCanoa?.capacidadMax ?? 0
+          const participantes = s.participantes?.length ?? 0
+          const cupos = Math.max(0, capacidadMax - participantes)
+
+          if (!agrupadas[fecha]) agrupadas[fecha] = []
+          agrupadas[fecha].push({ hora, cupos, id: s.id })
+        })
+
+        salidasPorFecha.value = agrupadas
+      } catch (error) {
+        console.error('Error al cargar salidas:', error)
+      } finally {
+        cargando.value = false
+      }
+    }
+
+    onMounted(cargarSalidas)
+
+    // ── Calendario ────────────────────────────────
     const formatDate = (d) => {
       const y   = d.getFullYear()
       const m   = String(d.getMonth() + 1).padStart(2, '0')
@@ -80,7 +105,7 @@ export default defineComponent({
         currentMonth: currentMonthFlag,
         isToday: key === formatDate(new Date()),
         isPast: cmp < today,
-        salidas: salidas.value[key] || [],
+        salidas: salidasPorFecha.value[key] ?? [],
       }
     }
 
@@ -99,11 +124,19 @@ export default defineComponent({
       return days
     })
 
-    const prevMonth = () =>
-      currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() - 1, 1)
+    const prevMonth = () => {
+      currentMonth.value = new Date(
+        currentMonth.value.getFullYear(),
+        currentMonth.value.getMonth() - 1, 1
+      )
+    }
 
-    const nextMonth = () =>
-      currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() + 1, 1)
+    const nextMonth = () => {
+      currentMonth.value = new Date(
+        currentMonth.value.getFullYear(),
+        currentMonth.value.getMonth() + 1, 1
+      )
+    }
 
     // ── Navegación ────────────────────────────────
     const selectDay = (day) => {
@@ -115,18 +148,16 @@ export default defineComponent({
       view.value = 'calendar'
     }
 
-    /**
-     * Recibe el payload emitido por BookingFormPanel.
-     * Aquí puedes hacer dispatch al store o llamar a la API.
-     */
-    const handleSubmit = (payload) => {
+    const handleSubmit = async (payload) => {
       console.log('Nueva reserva:', payload)
+      await cargarSalidas() // recargar calendario tras crear reserva
       goBack()
     }
 
     return {
       view, selectedDay, goBack, selectDay, handleSubmit,
       calendarDays, monthYearLabel, prevMonth, nextMonth,
+      cargando
     }
   },
 })
@@ -143,7 +174,6 @@ export default defineComponent({
   min-height: 0;
 }
 
-/* Contenedor que recorta los paneles fuera de vista */
 .scene {
   position: relative;
   flex: 1;
@@ -151,7 +181,6 @@ export default defineComponent({
   overflow: hidden;
 }
 
-/* ── Transición: calendario sale por izquierda ── */
 .slide-left-enter-active,
 .slide-left-leave-active {
   transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1),
@@ -160,7 +189,6 @@ export default defineComponent({
 .slide-left-enter-from { transform: translateX(-100%); opacity: 0; }
 .slide-left-leave-to   { transform: translateX(-100%); opacity: 0; }
 
-/* ── Transición: formulario entra por derecha ── */
 .slide-right-enter-active,
 .slide-right-leave-active {
   transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1),

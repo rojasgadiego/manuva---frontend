@@ -9,28 +9,28 @@
       <p>{{ errorMessage }}</p>
     </div>
 
-    <!-- Email -->
-    <div class="form-group" :class="{ 'has-error': errors.email }">
-      <label for="email">Correo electrónico</label>
+    <!-- Username -->
+    <div class="form-group" :class="{ 'has-error': errors.username }">
+      <label for="username">Usuario</label>
       <div class="input-wrap">
         <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
         </svg>
         <input
-          id="email"
-          type="email"
-          v-model.trim="formData.email"
+          id="username"
+          type="text"
+          v-model.trim="formData.username"
           :disabled="isSubmitting"
-          placeholder="tu@correo.cl"
-          autocomplete="email"
+          placeholder="tu_usuario"
+          autocomplete="username"
           aria-required="true"
-          :aria-invalid="!!errors.email"
-          aria-describedby="email-error"
-          @blur="validateEmail"
-          @input="errors.email = ''"
+          :aria-invalid="!!errors.username"
+          aria-describedby="username-error"
+          @blur="validateUsername"
+          @input="errors.username = ''"
         />
       </div>
-      <p v-if="errors.email" id="email-error" class="error-msg">{{ errors.email }}</p>
+      <p v-if="errors.username" id="username-error" class="error-msg">{{ errors.username }}</p>
     </div>
 
     <!-- Password -->
@@ -62,11 +62,9 @@
           @click="togglePassword"
           :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
         >
-          <!-- Ojo abierto -->
           <svg v-if="!showPassword" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
           </svg>
-          <!-- Ojo tachado -->
           <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
           </svg>
@@ -104,7 +102,6 @@
 <script>
 import { ref, reactive, computed } from 'vue'
 import { useStore } from 'vuex'
-import { useRouter, useRoute } from 'vue-router'
 
 export default {
   name: 'LoginForm',
@@ -112,22 +109,20 @@ export default {
 
   setup() {
     const store = useStore()
-    const router = useRouter()
-    const route = useRoute()
 
-    const formData = reactive({ email: '', password: '', remember: false })
-    const errors = reactive({ email: '', password: '' })
+    const formData = reactive({ username: '', password: '', remember: false })
+    const errors = reactive({ username: '', password: '' })
     const isSubmitting = ref(false)
     const showPassword = ref(false)
     const errorMessage = ref('')
 
-    const validateEmail = () => {
-      if (!formData.email) {
-        errors.email = 'El correo es obligatorio'
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        errors.email = 'Ingresa un correo válido'
+    const validateUsername = () => {
+      if (!formData.username) {
+        errors.username = 'El usuario es obligatorio'
+      } else if (formData.username.length < 3) {
+        errors.username = 'El usuario debe tener al menos 3 caracteres'
       } else {
-        errors.email = ''
+        errors.username = ''
       }
     }
 
@@ -142,13 +137,13 @@ export default {
     }
 
     const isFormValid = computed(() =>
-      formData.email && formData.password && !errors.email && !errors.password
+      formData.username && formData.password && !errors.username && !errors.password
     )
 
     const togglePassword = () => { showPassword.value = !showPassword.value }
 
     const handleSubmit = async () => {
-      validateEmail()
+      validateUsername()
       validatePassword()
       if (!isFormValid.value) return
 
@@ -157,15 +152,13 @@ export default {
 
       try {
         await store.dispatch('auth/login', {
-          email: formData.email,
-          password: formData.password,
-          //remember: formData.remember
+          username: formData.username,
+          password: formData.password
         })
-        router.push(route.query.redirect || '/dashboard')
       } catch (error) {
         showPassword.value = false
         errorMessage.value =
-          error.response?.data?.message || 'Correo o contraseña incorrectos'
+          error.response?.data?.message || 'Usuario o contraseña incorrectos'
       } finally {
         isSubmitting.value = false
       }
@@ -174,7 +167,7 @@ export default {
     return {
       formData, errors, isSubmitting, showPassword,
       errorMessage, isFormValid,
-      validateEmail, validatePassword, togglePassword, handleSubmit
+      validateUsername, validatePassword, togglePassword, handleSubmit
     }
   }
 }
@@ -183,14 +176,12 @@ export default {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap');
 
-/* ── Form ── */
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* ── Alert global ── */
 .alert-error {
   display: flex;
   align-items: center;
@@ -207,7 +198,6 @@ export default {
 
 .alert-error p { margin: 0; }
 
-/* ── Grupos ── */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -238,7 +228,6 @@ label {
 
 .forgot-link:hover { color: #74e8a0; }
 
-/* ── Input ── */
 .input-wrap {
   position: relative;
   display: flex;
@@ -276,7 +265,6 @@ label {
   box-shadow: 0 0 0 3px rgba(116, 232, 160, 0.08);
 }
 
-.input-wrap input:focus ~ .input-icon,
 .input-wrap:focus-within .input-icon {
   color: rgba(116, 232, 160, 0.7);
 }
@@ -286,12 +274,10 @@ label {
   cursor: not-allowed;
 }
 
-/* Error en input */
 .has-error .input-wrap input {
   border-color: rgba(239, 100, 100, 0.5);
 }
 
-/* Toggle contraseña */
 .toggle-pw {
   position: absolute;
   right: 12px;
@@ -307,7 +293,6 @@ label {
 
 .toggle-pw:hover { color: rgba(255, 255, 255, 0.6); }
 
-/* Error de campo */
 .error-msg {
   font-family: 'DM Sans', sans-serif;
   font-size: 0.72rem;
@@ -315,7 +300,6 @@ label {
   margin: 0;
 }
 
-/* ── Recordarme ── */
 .remember-row { margin-top: -4px; }
 
 .checkbox-label {
@@ -361,7 +345,6 @@ label {
   display: block;
 }
 
-/* ── Botón ── */
 .submit-btn {
   width: 100%;
   min-height: 46px;
@@ -398,7 +381,6 @@ label {
   gap: 8px;
 }
 
-/* ── Spinner ── */
 .spinner {
   width: 16px;
   height: 16px;

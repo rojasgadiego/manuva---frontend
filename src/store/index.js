@@ -1,16 +1,6 @@
 
 import { createStore } from 'vuex'
 import auth from './modules/auth'
-import clientes from './modules/cliente'
-import dashboard from './modules/dashboard'
-import proveedores from './modules/proveedores'
-import usuarios from './modules/usuarios'
-import facturas from './modules/facturas'
-import productos from './modules/productos'
-import movimientos from './modules/movimientos';
-import inventario from './modules/inventario';
-import ramos from './modules/ramos'
-import venta from './modules/venta'
 
 export default createStore({
   state: {
@@ -45,15 +35,5 @@ export default createStore({
   },
   modules: {
     auth,
-    clientes,
-    dashboard,
-    proveedores,
-    usuarios,
-    facturas,
-    productos,
-    movimientos,
-    inventario,
-    ramos,
-    venta
   }
 })
