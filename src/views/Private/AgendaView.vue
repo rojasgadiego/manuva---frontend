@@ -59,18 +59,18 @@ export default defineComponent({
         // Agrupar por fecha y transformar al formato del calendario
         const agrupadas = {}
         salidas.forEach(s => {
-          const fecha = s.fechaHoraProgramada?.substring(0, 10) // 'YYYY-MM-DD'
+          const fecha = s.fechaHoraProgramada?.substring(0, 10)
           if (!fecha) return
 
-          const hora = s.fechaHoraProgramada?.substring(11, 16) // 'HH:MM'
-
-          // Calcular cupos disponibles
-          const capacidadMax = s.canoa?.tipoCanoa?.capacidadMax ?? 0
-          const participantes = s.participantes?.length ?? 0
-          const cupos = Math.max(0, capacidadMax - participantes)
+          const cuposLibres = s.capacidadMax - s.participantes
 
           if (!agrupadas[fecha]) agrupadas[fecha] = []
-          agrupadas[fecha].push({ hora, cupos, id: s.id })
+          agrupadas[fecha].push({
+            id:       s.id,
+            hora:     s.fechaHoraProgramada.substring(11, 16),
+            cupos:    cuposLibres,       // cupos disponibles
+            cuposMax: s.capacidadMax,    // capacidad total de la canoa
+          })
         })
 
         salidasPorFecha.value = agrupadas

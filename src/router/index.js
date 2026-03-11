@@ -9,6 +9,7 @@ import NotFound from '@/views/NotFoundView.vue'
 import Forbidden from '@/views/ForbiddenView.vue'
 import DashboardView from '@/views/Private/DashboardView.vue'
 import AgendaView from '@/views/Private/AgendaView.vue'
+import PerfilUsuario from '@/views/Private/PerfilUsuario.vue'
 
 // Definir rutas
 const routes = [
@@ -60,17 +61,16 @@ const routes = [
       title: 'Salidas'
     }
   },
-  // // Ruta para configuración (solo admin)
-  // {
-  //   path: '/settings',
-  //   name: 'Settings',
-  //   component: () => import('@/views/Settings.vue'),
-  //   meta: {
-  //     requiresAuth: true,
-  //     roles: ['admin'],
-  //     title: 'Configuración del Sistema'
-  //   }
-  // },
+  // Ruta para configuración (solo admin)
+  {
+    path: '/perfil',
+    name: 'Perfil',
+    component: PerfilUsuario,
+    meta: {
+      requiresAuth: true,
+      title: 'Mi Perfil'
+    }
+  },
   // Rutas de error
   {
     path: '/forbidden',

@@ -1,4 +1,5 @@
 import authService from '@/services/auth.service'
+import usuarioService from '@/services/usuario.service'
 import router from '@/router'
 
 const auth = {
@@ -46,34 +47,38 @@ const auth = {
   },
 
   actions: {
-    async login({ commit }, credentials) {
+    async login({ commit, dispatch }, credentials) {
       commit('SET_LOADING', true)
       commit('SET_ERROR', null)
 
       try {
-        const response = await authService.login(credentials)
-        const data = response.data?.data
-
-        if (!data) throw new Error('Respuesta inválida del servidor')
-
-        const user = {
-          username:       data.username,
-          nombreCompleto: data.nombreCompleto,
-          rol:            data.rol
-        }
-
-        commit('SET_AUTH', { user })
+        await authService.login(credentials)  // setea la cookie HttpOnly
+        await dispatch('fetchMe')             // obtiene datos completos desde el JWT
 
         const redirectPath = router.currentRoute.value.query.redirect || '/dashboard'
         router.push(redirectPath)
-
-        return response.data
       } catch (error) {
         commit('SET_ERROR', error.response?.data?.message || 'Error de autenticación')
         throw error
       } finally {
         commit('SET_LOADING', false)
       }
+    },
+
+    async fetchMe({ commit }) {
+      const response = await usuarioService.me()
+      const data = response.data?.data
+
+      if (!data) throw new Error('No se pudo obtener el usuario.')
+
+      const user = {
+        id:             data.id,
+        username:       data.username,
+        nombreCompleto: data.remador?.nombreCompleto ?? data.username,
+        rol:            data.rol
+      }
+
+      commit('SET_AUTH', { user })
     },
 
     async logout({ commit }) {
@@ -87,10 +92,12 @@ const auth = {
       }
     },
 
-    initAuth({ commit }) {
+    initAuth({ commit, dispatch }) {
       const user = JSON.parse(localStorage.getItem('user') || 'null')
-      if (user) {
+      if (user?.id) {
         commit('SET_AUTH', { user })
+        // revalida con el servidor por si el token expiró
+        dispatch('fetchMe').catch(() => dispatch('logout'))
         return true
       }
       commit('CLEAR_AUTH')

@@ -175,7 +175,8 @@ export default {
       //Remador
       // { name: 'Dashboard', path: '/dashboard', icon: '🏠' },
       { name: 'Agendar salida', path: '/agenda', icon: '🛶' },
-      // { name: 'Mi perfil', path: '/perfil', icon: '👤'},
+
+      { name: 'Mi perfil', path: '/perfil', icon: '👤'},
     ]
 
     const filteredMenuItems = computed(() => {

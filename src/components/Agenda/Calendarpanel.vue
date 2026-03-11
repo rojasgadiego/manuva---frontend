@@ -4,14 +4,15 @@
       <div class="calendar-header">
         <button class="nav-btn" @click="$emit('prev-month')">‹</button>
         <h2>{{ monthYearLabel }}</h2>
-        <button class="nav-btn" @click="$emit('next-month')">›</button>
-      </div>
 
-      <!-- Leyenda -->
-      <div class="legend">
-        <span class="legend-item"><span class="legend-dot available"></span>Disponible</span>
-        <span class="legend-item"><span class="legend-dot partial"></span>Casi lleno</span>
-        <span class="legend-item"><span class="legend-dot full"></span>Sin cupos</span>
+        <div class="header-right">
+          <div class="legend">
+            <span class="legend-item"><span class="legend-bar available"></span>Disponible</span>
+            <span class="legend-item"><span class="legend-bar partial"></span>Casi lleno</span>
+            <span class="legend-item"><span class="legend-bar full"></span>Sin cupos</span>
+          </div>
+          <button class="nav-btn" @click="$emit('next-month')">›</button>
+        </div>
       </div>
 
       <div class="calendar-grid">
@@ -21,12 +22,13 @@
           v-for="day in calendarDays"
           :key="day.date"
           class="calendar-day"
-          :class="{
-            today:    day.isToday,
-            selected: isSelected(day.date),
-            inactive: !day.currentMonth,
-            past:     day.isPast
-          }"
+          :class="[
+            { today:    day.isToday },
+            { selected: isSelected(day.date) },
+            { inactive: !day.currentMonth },
+            { past:     day.isPast },
+            day.salidas.length ? getEstado(day.salidas) : 'empty'
+          ]"
           @click="!day.isPast && $emit('select-day', day)"
         >
           <div class="day-header">
@@ -62,9 +64,9 @@ export default defineComponent({
   name: 'CalendarPanel',
 
   props: {
-    calendarDays: { type: Array,  required: true },
+    calendarDays:   { type: Array,  required: true },
     monthYearLabel: { type: String, required: true },
-    selectedDate: { type: String, default: null },
+    selectedDate:   { type: String, default: null },
   },
 
   emits: ['prev-month', 'next-month', 'select-day'],
@@ -74,24 +76,19 @@ export default defineComponent({
 
     const isSelected = (date) => props.selectedDate === date
 
-    // Cupos libres totales del día
     const getCuposTotales = (salidas) =>
       salidas.reduce((acc, s) => acc + (s.cupos ?? 0), 0)
 
-    // Cupos máximos totales del día
     const getCuposMaximos = (salidas) =>
-      salidas.reduce((acc, s) => acc + (s.cuposMax ?? s.cupos ?? 0), 0)
+      salidas.reduce((acc, s) => acc + (s.cuposMax ?? 0), 0)
 
-    // Porcentaje de ocupación
     const getPorcentajeOcupacion = (salidas) => {
       const max   = getCuposMaximos(salidas)
       const libre = getCuposTotales(salidas)
       if (max === 0) return 100
-      const ocupado = max - libre
-      return Math.min(100, Math.round((ocupado / max) * 100))
+      return Math.min(100, Math.round(((max - libre) / max) * 100))
     }
 
-    // Estado del día según disponibilidad
     const getEstado = (salidas) => {
       const pct = getPorcentajeOcupacion(salidas)
       if (pct >= 100) return 'full'
@@ -116,17 +113,17 @@ export default defineComponent({
   flex-direction: column;
   overflow: hidden;
 
-  --ocean:    #0a7ea4;
-  --ocean-lt: #e0f4fb;
-  --text:     #1a2332;
-  --muted:    #6b7a8d;
-  --border:   #dde4ea;
-  --green:    #0d9066;
-  --green-lt: #e6f7f2;
-  --yellow:   #b45309;
-  --yellow-lt:#fef3c7;
-  --red:      #c0392b;
-  --red-lt:   #fdecea;
+  --ocean:     #0a7ea4;
+  --ocean-lt:  #e0f4fb;
+  --text:      #1a2332;
+  --muted:     #6b7a8d;
+  --border:    #dde4ea;
+  --green:     #0d9066;
+  --green-lt:  #e6f7f2;
+  --yellow:    #b45309;
+  --yellow-lt: #fef3c7;
+  --red:       #c0392b;
+  --red-lt:    #fdecea;
   font-family: 'DM Sans', sans-serif;
 }
 
@@ -146,9 +143,8 @@ export default defineComponent({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
-
 .calendar-header h2 {
   font-family: 'DM Serif Display', serif;
   font-size: 1.3rem;
@@ -156,7 +152,11 @@ export default defineComponent({
   margin: 0;
   text-transform: capitalize;
 }
-
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .nav-btn {
   border: 1.5px solid var(--border);
   background: #fff;
@@ -167,29 +167,32 @@ export default defineComponent({
   color: var(--muted);
   display: flex; align-items: center; justify-content: center;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
 }
 .nav-btn:hover { background: var(--ocean-lt); color: var(--ocean); border-color: var(--ocean); }
 
 /* ── Leyenda ── */
 .legend {
   display: flex;
-  gap: 14px;
-  margin-bottom: 12px;
+  gap: 10px;
 }
 .legend-item {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: .72rem;
+  font-size: .68rem;
   color: var(--muted);
+  white-space: nowrap;
 }
-.legend-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
+.legend-bar {
+  width: 4px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
-.legend-dot.available { background: var(--green); }
-.legend-dot.partial   { background: var(--yellow); }
-.legend-dot.full      { background: var(--red); }
+.legend-bar.available { background: var(--green); }
+.legend-bar.partial   { background: var(--yellow); }
+.legend-bar.full      { background: var(--red); }
 
 /* ── Grid ── */
 .calendar-grid {
@@ -199,7 +202,6 @@ export default defineComponent({
   gap: 6px;
   flex: 1;
 }
-
 .calendar-day-name {
   text-align: center;
   font-size: .72rem;
@@ -210,33 +212,59 @@ export default defineComponent({
   letter-spacing: .05em;
 }
 
-/* ── Día ── */
+/* ── Día base ── */
 .calendar-day {
   background: #f0f9fc;
   border-radius: 10px;
-  padding: 8px;
+  padding: 8px 8px 8px 12px;
   cursor: pointer;
   transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
   display: flex;
   flex-direction: column;
   gap: 4px;
   border: 1.5px solid transparent;
+  border-left-width: 4px;
 }
 
+/* ── Estados — barra lateral de color ── */
+.calendar-day.empty     { border-left-color: var(--border); }
+.calendar-day.available { border-left-color: var(--green);  background: #fff; }
+.calendar-day.partial   { border-left-color: var(--yellow); background: #fff; }
+.calendar-day.full      { border-left-color: var(--red);    background: #fff; }
+
+/* ── Hover ── */
 .calendar-day:hover:not(.past):not(.inactive) {
   background: var(--ocean-lt);
   border-color: var(--ocean);
+  border-left-color: var(--ocean);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(10,126,164,.15);
 }
 
-.calendar-day.today    { border-color: var(--ocean); background: var(--ocean-lt); }
-.calendar-day.selected { background: var(--ocean); border-color: var(--ocean); }
+/* ── Hoy ── */
+.calendar-day.today {
+  border-color: var(--ocean) !important;
+  border-left-color: var(--ocean) !important;
+  background: var(--ocean-lt) !important;
+}
+
+/* ── Seleccionado ── */
+.calendar-day.selected {
+  background: var(--ocean) !important;
+  border-color: var(--ocean) !important;
+  border-left-color: rgba(255,255,255,.4) !important;
+}
 .calendar-day.selected .day-number,
 .calendar-day.selected .salidas-count,
-.calendar-day.selected .cupos-texto { color: #fff; }
+.calendar-day.selected .cupos-texto  { color: #fff; }
+.calendar-day.selected .ocupacion-bar  { background: rgba(255,255,255,.25); }
+.calendar-day.selected .ocupacion-fill { background: #fff !important; }
+.calendar-day.selected .status-dot     { background: rgba(255,255,255,.7) !important; }
+
+/* ── Inactivo / pasado ── */
 .calendar-day.inactive { opacity: .35; pointer-events: none; }
 .calendar-day.past     { opacity: .3; background: #f0f2f5; cursor: not-allowed; }
+.calendar-day.past:hover { transform: none; box-shadow: none; }
 
 /* ── Cabecera del día ── */
 .day-header {
@@ -244,13 +272,11 @@ export default defineComponent({
   justify-content: space-between;
   align-items: center;
 }
-
 .day-number {
   font-weight: 600;
   font-size: .85rem;
   color: var(--text);
 }
-
 .status-dot {
   width: 8px; height: 8px;
   border-radius: 50%;
@@ -266,23 +292,17 @@ export default defineComponent({
   flex-direction: column;
   gap: 3px;
 }
-
 .salidas-count {
   font-size: .62rem;
   font-weight: 600;
   color: var(--muted);
 }
-
-.calendar-day.selected .salidas-count { color: rgba(255,255,255,.8); }
-
-/* Barra de ocupación */
 .ocupacion-bar {
   height: 4px;
   background: rgba(0,0,0,.08);
   border-radius: 4px;
   overflow: hidden;
 }
-
 .ocupacion-fill {
   height: 100%;
   border-radius: 4px;
@@ -292,9 +312,6 @@ export default defineComponent({
 .ocupacion-fill.partial   { background: var(--yellow); }
 .ocupacion-fill.full      { background: var(--red); }
 
-.calendar-day.selected .ocupacion-bar { background: rgba(255,255,255,.25); }
-.calendar-day.selected .ocupacion-fill { background: #fff; }
-
 .cupos-texto {
   font-size: .58rem;
   color: var(--muted);
@@ -303,12 +320,10 @@ export default defineComponent({
 /* ── Mobile ── */
 @media (max-width: 600px) {
   .calendar-day {
-    padding: 6px 4px;
+    padding: 6px 4px 6px 8px;
     border-radius: 8px;
-    align-items: center;
-    justify-content: center;
   }
-  .day-header { justify-content: center; font-size: .9rem; }
+  .day-header { justify-content: center; }
   .status-dot, .day-summary, .legend { display: none; }
 }
 </style>
