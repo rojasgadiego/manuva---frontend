@@ -3,8 +3,8 @@
     <NavBar />
     <HeroSection />
     <AboutSection />
-    <!-- <ServicesSection />
-    <CatalogSection />
+    <ServicesSection />
+    <!-- <CatalogSection />
     <GallerySection />
      -->
     <MapSection />
@@ -16,7 +16,7 @@
 import NavBar from '@/components/Home/Navigation/NavBar.vue'
 import HeroSection from '@/components/Home/Sections/HeroSection.vue'
 import AboutSection from '@/components/Home/Sections/AboutSection.vue'
-// import ServicesSection from '@/components/Home/Sections/ServicesSection.vue'
+import ServicesSection from '@/components/Home/Sections/ServicesSection.vue'
 // import CatalogSection from '@/components/Home/Sections/CatalogSection.vue'
 // import GallerySection from '@/components/Home/Sections/GallerySection.vue'
 import MapSection from '@/components/Home/Sections/MapSection.vue'
@@ -28,7 +28,7 @@ export default {
     NavBar,
     HeroSection,
     AboutSection,
-    // ServicesSection,
+    ServicesSection,
     // CatalogSection,
     // GallerySection,
     MapSection,

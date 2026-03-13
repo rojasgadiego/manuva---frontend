@@ -171,7 +171,7 @@ export default {
       locationPermission: null,
       isCalculatingDistance: false,
       storeInfo: {
-        address: 'Costanera de Coquimbo, Coquimbo, Región de Coquimbo',
+        address: 'Av. Costanera 3785, Coquimbo - Chile.',
         phone: '+56 9 1234 5678',
         email: 'contacto@manuva-a.cl',
         schedules: [
@@ -180,8 +180,8 @@ export default {
           'Domingo: 08:00 – 13:00',
         ],
         coordinates: {
-          lat: -29.9533,
-          lng: -71.3436
+          lat: -29.955395662781825,
+          lng: -71.30466340306107
         }
       }
     }
