@@ -66,9 +66,7 @@
             >🌙</button>
           </div>
 
-          <div class="user-avatar" :title="currentUser ? currentUser.email : 'Usuario'">
-            {{ userInitials }}
-          </div>
+          
         </div>
       </header>
 
@@ -149,6 +147,7 @@ export default {
 
     // ── Menú ──────────────────────────────────────────────
     const menuItems = [
+      { name: 'Dashboard',      path: '/dashboard', icon: '📊' },
       { name: 'Agendar salida', path: '/agenda', icon: '🛶' },
       { name: 'Mi perfil',      path: '/perfil', icon: '👤' },
     ]

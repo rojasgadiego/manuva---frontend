@@ -17,7 +17,7 @@
       <template v-else-if="usuario">
         <div class="perfil__inner">
 
-          <!-- ── Header horizontal ── -->
+          <!-- ── Header + stats en una sola fila ── -->
           <header class="perfil__header">
             <div class="avatar">
               <img v-if="usuario.remador?.fotoUrl" :src="usuario.remador.fotoUrl" class="avatar__img" />
@@ -37,31 +37,30 @@
                 </span>
               </div>
             </div>
-          </header>
 
-          <!-- ── Barra de stats rápidos ── -->
-          <div class="stats-bar">
-            <div class="stat-cell">
-              <span class="stat-cell__label">Estado</span>
-              <span class="stat-cell__value" :class="usuario.activo ? 'val--green' : 'val--red'">
-                {{ usuario.activo ? 'Activo' : 'Inactivo' }}
-              </span>
+            <div class="header__stats">
+              <div class="stat-cell">
+                <span class="stat-cell__label">Estado</span>
+                <span class="stat-cell__value" :class="usuario.activo ? 'val--green' : 'val--red'">
+                  {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </div>
+              <div class="stat-cell">
+                <span class="stat-cell__label">Email</span>
+                <span class="stat-cell__value" :class="usuario.emailVerificado ? 'val--green' : 'val--red'">
+                  {{ usuario.emailVerificado ? 'Verificado' : 'Sin verificar' }}
+                </span>
+              </div>
+              <div class="stat-cell">
+                <span class="stat-cell__label">Miembro desde</span>
+                <span class="stat-cell__value">{{ formatFecha(usuario.fechaCreacion) }}</span>
+              </div>
+              <div class="stat-cell stat-cell--last">
+                <span class="stat-cell__label">Último acceso</span>
+                <span class="stat-cell__value">{{ formatFechaHora(usuario.ultimoAcceso) }}</span>
+              </div>
             </div>
-            <div class="stat-cell">
-              <span class="stat-cell__label">Email</span>
-              <span class="stat-cell__value" :class="usuario.emailVerificado ? 'val--green' : 'val--red'">
-                {{ usuario.emailVerificado ? 'Verificado' : 'Sin verificar' }}
-              </span>
-            </div>
-            <div class="stat-cell">
-              <span class="stat-cell__label">Miembro desde</span>
-              <span class="stat-cell__value">{{ formatFecha(usuario.fechaCreacion) }}</span>
-            </div>
-            <div class="stat-cell">
-              <span class="stat-cell__label">Último acceso</span>
-              <span class="stat-cell__value">{{ formatFechaHora(usuario.ultimoAcceso) }}</span>
-            </div>
-          </div>
+          </header>
 
           <!-- ── Grid de cards ── -->
           <div v-if="usuario.remador" class="cards-grid">
@@ -296,24 +295,33 @@ export default defineComponent({
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Layout interior ───────────────────────────────── */
+/* ── Layout interior ───────────────────────────────── */
 .perfil__inner {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
   overflow-y: auto;
+  padding: 16px;
+  gap: 10px;
   scrollbar-width: thin;
   scrollbar-color: var(--surface-border, #e2e8f0) transparent;
 }
 
-/* ── Header horizontal ─────────────────────────────── */
+.perfil__inner > header,
+.perfil__inner > .cards-grid {
+  width: 100%;
+}
+
+/* ── Header unificado (identidad + stats en una fila) ── */
 .perfil__header {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 20px 22px;
+  gap: 16px;
+  padding: 14px 18px;
   background: var(--surface-bg, #ffffff);
-  border-bottom: 0.5px solid var(--surface-border, #e2e8f0);
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  border-radius: 10px;
   flex-shrink: 0;
   transition: background 0.25s ease, border-color 0.25s ease;
 }
@@ -323,8 +331,8 @@ export default defineComponent({
 
 .avatar__img,
 .avatar__initials {
-  width: 68px; height: 68px;
-  border-radius: 18px;
+  width: 48px; height: 48px;
+  border-radius: 12px;
 }
 .avatar__img { object-fit: cover; }
 
@@ -334,7 +342,7 @@ export default defineComponent({
   align-items: center;
   justify-content: center;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.4rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #0c1017;
 }
@@ -342,78 +350,84 @@ export default defineComponent({
 .avatar__dot {
   position: absolute;
   bottom: -2px; right: -2px;
-  width: 13px; height: 13px;
+  width: 11px; height: 11px;
   border-radius: 50%;
-  border: 2.5px solid var(--surface-bg, #ffffff);
+  border: 2px solid var(--surface-bg, #ffffff);
   transition: border-color 0.25s ease;
 }
 .dot--on  { background: var(--green); }
 .dot--off { background: var(--red); }
 
-/* Identity */
-.header__identity { display: flex; flex-direction: column; gap: 0; }
+/* Identity — bloque izquierdo compacto */
+.header__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+  padding-right: 16px;
+  border-right: 0.5px solid var(--surface-border, #e2e8f0);
+}
 
 .identity__nombre {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-primary, #0f172a);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
   line-height: 1.2;
+  white-space: nowrap;
   transition: color 0.25s ease;
 }
 
 .identity__user {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--text-secondary, #64748b);
-  margin: 3px 0 10px;
+  margin: 2px 0 7px;
 }
 
-.identity__tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.identity__tags { display: flex; gap: 4px; flex-wrap: wrap; }
 
 .tag {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 3px 9px;
+  padding: 2px 8px;
   border-radius: 99px;
 }
 .tag--cyan   { background: rgba(56, 189, 248, 0.12); color: #0ea5d9; }
 .tag--indigo { background: rgba(129, 140, 248, 0.12); color: #7c87e8; }
 
-/* ── Barra de stats ────────────────────────────────── */
-.stats-bar {
+/* Stats — bloque derecho que ocupa el resto */
+.header__stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  background: var(--surface-bg, #ffffff);
-  border-bottom: 0.5px solid var(--surface-border, #e2e8f0);
-  flex-shrink: 0;
-  transition: background 0.25s ease, border-color 0.25s ease;
+  flex: 1;
 }
 
 .stat-cell {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 12px 18px;
+  padding: 4px 14px;
   border-right: 0.5px solid var(--surface-border, #e2e8f0);
 }
-.stat-cell:last-child { border-right: none; }
+.stat-cell--last { border-right: none; }
 
 .stat-cell__label {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--text-secondary, #64748b);
   font-weight: 500;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
 }
 
 .stat-cell__value {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-primary, #0f172a);
   transition: color 0.25s ease;
@@ -428,8 +442,7 @@ export default defineComponent({
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 16px 18px;
-  flex: 1;
+  padding: 0;
   align-content: start;
 }
 
@@ -527,21 +540,27 @@ export default defineComponent({
 }
 
 /* ── Responsive ────────────────────────────────────── */
-@media (max-width: 700px) {
-  .stats-bar { grid-template-columns: 1fr 1fr; }
+@media (max-width: 780px) {
+  .perfil__header { flex-wrap: wrap; }
+  .header__identity { border-right: none; padding-right: 0; }
+  .header__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    border-top: 0.5px solid var(--surface-border, #e2e8f0);
+    padding-top: 10px;
+  }
+  .stat-cell { padding: 4px 8px; }
+  .stat-cell--last { border-right: none; }
   .stat-cell:nth-child(2) { border-right: none; }
 
-  .cards-grid { grid-template-columns: 1fr; padding: 12px 14px; }
+  .cards-grid { grid-template-columns: 1fr; }
   .card--wide { grid-column: 1; }
 }
 
 @media (max-width: 480px) {
-  .perfil__header { padding: 16px 14px; gap: 14px; }
+  .perfil__header { padding: 12px 14px; gap: 12px; }
   .avatar__img,
-  .avatar__initials { width: 56px; height: 56px; border-radius: 14px; }
-  .avatar__initials { font-size: 1.1rem; }
-  .identity__nombre { font-size: 0.95rem; }
-  .stats-bar { grid-template-columns: 1fr 1fr; }
-  .stat-cell { padding: 10px 12px; }
+  .avatar__initials { width: 42px; height: 42px; border-radius: 10px; }
+  .avatar__initials { font-size: 0.9rem; }
 }
 </style>
