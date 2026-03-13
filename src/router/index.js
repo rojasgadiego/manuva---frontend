@@ -100,79 +100,46 @@ const router = createRouter({
 
 // Guard de navegación global para protección de rutas
 router.beforeEach(async (to, from, next) => {
-  // Actualizar título de la página
-  document.title = to.meta.title ? `${to.meta.title} | Manuva` : 'Manuva'
 
-  if (to.name === 'Login' && store.getters['auth/isAuthenticated']) {
+  document.title = to.meta.title
+    ? `${to.meta.title} | Manuva`
+    : 'Manuva'
+
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+
+  const isAuthenticated = store.getters['auth/isAuthenticated']
+
+  if (to.name === 'Login' && isAuthenticated) {
     next({ name: 'Dashboard' })
     return
   }
-  
-  // Verificar si la ruta requiere autenticación
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  
-  if (requiresAuth) {
-    // Verificar autenticación usando el store
-    const isAuthenticated = store.getters['auth/isAuthenticated']
-    
-    if (!isAuthenticated) {
-      // Si no está autenticado según el store, verificar si hay token en localStorage
-      const token = localStorage.getItem('token')
-      
-      if (token) {
-        // Si hay token pero no está en el store, restaurar estado
-        await store.dispatch('auth/initAuth')
-        
-        // Después de restaurar, verificar nuevamente
-        if (store.getters['auth/isAuthenticated']) {
-          // Verificar roles si es necesario
-          return checkRolesAndProceed(to, next)
-        }
+
+  if (requiresAuth && !isAuthenticated) {
+
+    try {
+
+      await store.dispatch('auth/initAuth')
+
+      if (store.getters['auth/isAuthenticated']) {
+        next()
+        return
       }
-      
-      // No hay token o no es válido, redirigir a login
-      next({
-        path: '/login',  // Cambio de '/' a '/login'
-        query: { redirect: to.fullPath }
-      })
-      return
+
+    } catch (error) {
+      console.warn('Auth init error', error)
     }
-    
-    // Si está autenticado, verificar roles
-    return checkRolesAndProceed(to, next)
-  } else {
-    // Para rutas públicas, simplemente permitir acceso
-    next()
+
+    next({
+      path: '/login',
+      query: { redirect: to.fullPath }
+    })
+
+    return
   }
+
+  next()
+
 })
 
-// Función auxiliar para verificar roles y proceder
-function checkRolesAndProceed(to, next) {
-  // Verificar roles requeridos
-  const requiredRoles = to.matched.reduce((roles, record) => {
-    if (record.meta.roles) {
-      return [...roles, ...record.meta.roles]
-    }
-    return roles
-  }, [])
-  
-  // Si la ruta requiere roles específicos
-  if (requiredRoles.length > 0) {
-    // Obtener roles del usuario
-    const userRoles = store.getters['auth/userRoles']
-    
-    // Verificar si el usuario tiene alguno de los roles requeridos
-    const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role))
-    
-    if (!hasRequiredRole) {
-      // Redirigir a página de acceso denegado
-      next({ name: 'Forbidden' })
-      return
-    }
-  }
-  
-  // Usuario autenticado y con los roles adecuados
-  next()
-}
 
 export default router

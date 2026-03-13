@@ -4,18 +4,18 @@
     <!-- Topbar -->
     <div class="form-topbar">
       <button class="back-btn" @click="$emit('go-back')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
         Volver
       </button>
 
       <div class="form-date-badge">
-        <span class="badge-icon">🛶</span>
         <div>
           <p class="badge-sup">Agendar salida</p>
           <p class="badge-title">{{ dateLabel }}</p>
         </div>
+        <span class="badge-icon">🛶</span>
       </div>
     </div>
 
@@ -32,14 +32,14 @@
               {{ t.label }}
             </option>
           </select>
-          <svg class="select-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="select-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
 
         <!-- Timeline colapsable -->
         <button class="timeline-toggle" @click="showTimeline = !showTimeline" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Ver disponibilidad del día
-          <svg class="chevron" :class="{ open: showTimeline }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="chevron" :class="{ open: showTimeline }" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
 
         <Transition name="expand">
@@ -87,25 +87,25 @@
       <div class="field-block">
         <label class="field-label">Embarcación</label>
         <div class="canoa-scroll-wrap">
-        <div class="canoa-scroll" ref="canoeScroll" @scroll="onCanoeScroll">
-          <button
-            v-for="c in canoas" :key="c.id"
-            class="canoa-card"
-            :class="{ active: localForm.canoa === c.id, disabled: !c.disponible }"
-            :disabled="!c.disponible"
-            @click="localForm.canoa = c.id"
-            type="button"
-          >
-            <div class="canoa-top">
-              <span class="canoa-icon">{{ c.tipo.includes('Kayak') ? '🚣' : '⛵' }}</span>
-              <span v-if="localForm.canoa === c.id" class="canoa-check">✓</span>
-              <span v-else-if="!c.disponible" class="canoa-na">–</span>
-            </div>
-            <span class="canoa-nombre">{{ c.nombre }}</span>
-            <span class="canoa-meta">{{ c.capacidad }} pers.</span>
-          </button>
-        </div>
-        <div v-if="showFade" class="canoa-fade"></div>
+          <div class="canoa-scroll" ref="canoeScroll" @scroll="onCanoeScroll">
+            <button
+              v-for="c in canoas" :key="c.id"
+              class="canoa-card"
+              :class="{ active: localForm.canoa === c.id, disabled: !c.disponible }"
+              :disabled="!c.disponible"
+              @click="localForm.canoa = c.id"
+              type="button"
+            >
+              <div class="canoa-top">
+                <span class="canoa-icon">{{ c.tipo.includes('Kayak') ? '🚣' : '⛵' }}</span>
+                <span v-if="localForm.canoa === c.id" class="canoa-check">✓</span>
+                <span v-else-if="!c.disponible" class="canoa-na">–</span>
+              </div>
+              <span class="canoa-nombre">{{ c.nombre }}</span>
+              <span class="canoa-meta">{{ c.capacidad }} pers.</span>
+            </button>
+          </div>
+          <div v-if="showFade" class="canoa-fade"></div>
         </div>
       </div>
 
@@ -142,8 +142,15 @@
 
       <!-- ⑤ Nota -->
       <div class="field-block">
-        <label class="field-label">Nota <span class="optional">opcional</span></label>
-        <textarea v-model="localForm.nota" class="field-textarea" rows="2" placeholder="Ej: Salida en grupo, aguas tranquilas..."></textarea>
+        <label class="field-label">
+          Nota <span class="optional">opcional</span>
+        </label>
+        <textarea
+          v-model="localForm.nota"
+          class="field-textarea"
+          rows="2"
+          placeholder="Ej: Salida en grupo, aguas tranquilas..."
+        ></textarea>
       </div>
 
     </div>
@@ -175,8 +182,8 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const showTimeline = ref(false)
-    const showFade = ref(true)
-    const canoeScroll = ref(null)
+    const showFade     = ref(true)
+    const canoeScroll  = ref(null)
 
     const onCanoeScroll = (e) => {
       const el = e.target
@@ -210,9 +217,15 @@ export default defineComponent({
     })
 
     const resetForm = () =>
-      Object.assign(localForm, { hora: '', duracion: '60', canoa: '', chalecoPropio: false, remoPropio: false, nota: '' })
+      Object.assign(localForm, {
+        hora: '', duracion: '60', canoa: '',
+        chalecoPropio: false, remoPropio: false, nota: '',
+      })
 
-    watch(() => props.selectedDay?.date, () => { resetForm(); showTimeline.value = false })
+    watch(() => props.selectedDay?.date, () => {
+      resetForm()
+      showTimeline.value = false
+    })
 
     const dateLabel = computed(() => {
       if (!props.selectedDay) return ''
@@ -249,8 +262,8 @@ export default defineComponent({
     }
 
     return {
-      showTimeline, showFade, canoeScroll, onCanoeScroll, times, canoas, duraciones,
-      localForm, dateLabel,
+      showTimeline, showFade, canoeScroll, onCanoeScroll,
+      times, canoas, duraciones, localForm, dateLabel,
       salidasPorTime, isTimeFull, availableTimes, isFormValid,
       selectHour, handleSubmit,
     }
@@ -259,42 +272,46 @@ export default defineComponent({
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; }
 
+/* ─────────────────────────────────────────────────────
+   El formulario hereda las variables CSS definidas en
+   AppLayout (.dark / .light) y no define colores fijos.
+   Fallbacks para cuando se usa fuera del layout.
+───────────────────────────────────────────────────── */
 .form-panel {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: #f8f9fb;
-  border-radius: 16px;
-  overflow-y: auto;
-  font-family: 'DM Sans', sans-serif;
+  background: var(--content-bg, #f8fafc);
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.25s ease;
 
-  --ocean:    #0a7ea4;
-  --ocean-lt: #e8f5fb;
-  --ocean-dk: #064e68;
-  --text:     #161e2a;
-  --muted:    #7a8899;
-  --border:   #e3e8ee;
-  --surface:  #ffffff;
-  --green:    #0d9066;
-  --green-lt: #e6f7f2;
-  --red:      #c0392b;
-  --red-lt:   #fdecea;
+  /* Tokens de estado — fijos en ambos temas */
+  --cyan:       #38bdf8;
+  --cyan-dim:   rgba(56, 189, 248, 0.1);
+  --cyan-ring:  rgba(56, 189, 248, 0.2);
+  --green:      #22c55e;
+  --green-dim:  rgba(34, 197, 94, 0.1);
+  --red:        #ef4444;
+  --red-dim:    rgba(239, 68, 68, 0.1);
 }
 
-/* ── Topbar ── */
+/* ── Topbar ─────────────────────────────────────────── */
 .form-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--surface-bg, #ffffff);
+  border-bottom: 0.5px solid var(--surface-border, #e2e8f0);
   flex-shrink: 0;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .back-btn {
@@ -303,217 +320,244 @@ export default defineComponent({
   gap: 5px;
   background: none;
   border: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: .82rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.8rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--text-secondary, #64748b);
   cursor: pointer;
   padding: 4px 0;
-  transition: color .15s;
+  transition: color 0.15s;
 }
-.back-btn:hover { color: var(--ocean); }
+.back-btn:hover { color: var(--cyan); }
 
-.form-date-badge { display: flex; align-items: center; gap: 9px; text-align: right; }
-.badge-icon { font-size: 1.4rem; line-height: 1; }
+.form-date-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: right;
+}
+
+.badge-icon { font-size: 1.3rem; line-height: 1; }
+
 .badge-sup {
-  font-size: .65rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: .09em;
-  color: var(--ocean);
+  letter-spacing: 0.09em;
+  color: var(--cyan);
   font-weight: 600;
 }
+
 .badge-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1rem;
-  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
   text-transform: capitalize;
   line-height: 1.2;
+  letter-spacing: -0.2px;
+  transition: color 0.25s ease;
 }
 
-/* ── Body ── */
+/* ── Body ───────────────────────────────────────────── */
 .form-body {
   flex: 1;
   overflow-y: auto;
   padding: 20px 18px 8px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 22px;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--surface-border, #e2e8f0) transparent;
 }
 
-/* ── Field blocks ── */
-.field-block { display: flex; flex-direction: column; gap: 10px; }
+/* ── Field blocks ───────────────────────────────────── */
+.field-block { display: flex; flex-direction: column; gap: 8px; }
 
 .field-label {
-  font-size: .75rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--muted);
+  letter-spacing: 0.07em;
+  color: var(--text-secondary, #64748b);
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
 .optional {
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
   font-style: italic;
-  font-size: .75rem;
+  font-size: 0.75rem;
 }
 
-/* ── Select ── */
+/* ── Select ─────────────────────────────────────────── */
 .select-wrapper { position: relative; }
+
 .field-select {
   width: 100%;
-  padding: 13px 40px 13px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: .9rem;
-  color: var(--text);
-  background: var(--surface);
+  padding: 11px 38px 11px 13px;
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary, #0f172a);
+  background: var(--surface-bg, #ffffff);
   appearance: none;
   cursor: pointer;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.25s, color 0.25s;
 }
-.field-select:focus { outline: none; border-color: var(--ocean); box-shadow: 0 0 0 3px var(--ocean-lt); }
+
+.field-select:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px var(--cyan-ring);
+}
+
 .select-icon {
   position: absolute;
-  right: 14px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted);
+  color: var(--text-secondary, #64748b);
   pointer-events: none;
 }
 
-/* ── Timeline toggle ── */
+/* ── Timeline toggle ────────────────────────────────── */
 .timeline-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: none;
   border: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: .78rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.75rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--text-secondary, #64748b);
   cursor: pointer;
   padding: 0;
-  transition: color .15s;
+  transition: color 0.15s;
   width: fit-content;
 }
-.timeline-toggle:hover { color: var(--ocean); }
-.chevron { transition: transform .2s; }
+.timeline-toggle:hover { color: var(--cyan); }
+.chevron { transition: transform 0.2s; }
 .chevron.open { transform: rotate(180deg); }
 
-/* ── Timeline inline ── */
-.expand-enter-active, .expand-leave-active {
-  transition: opacity .2s ease, max-height .25s ease;
+/* ── Timeline inline ────────────────────────────────── */
+.expand-enter-active,
+.expand-leave-active {
+  transition: opacity 0.2s ease, max-height 0.25s ease;
   max-height: 600px;
   overflow: hidden;
 }
-.expand-enter-from, .expand-leave-to { opacity: 0; max-height: 0; }
+.expand-enter-from,
+.expand-leave-to { opacity: 0; max-height: 0; }
 
 .timeline-inline {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
+  background: var(--surface-bg, #ffffff);
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  border-radius: 10px;
   overflow: hidden;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .tl-row {
   display: grid;
-  grid-template-columns: 44px 12px 1fr auto;
+  grid-template-columns: 44px 10px 1fr auto;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background .12s;
-  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+  border-bottom: 0.5px solid var(--surface-border, #e2e8f0);
 }
 .tl-row:last-child { border-bottom: none; }
-.tl-row:hover:not(.tl-full) { background: var(--ocean-lt); }
-.tl-row.tl-selected { background: var(--ocean-lt); }
-.tl-row.tl-full { opacity: .45; cursor: not-allowed; }
+.tl-row:hover:not(.tl-full) { background: var(--cyan-dim); }
+.tl-row.tl-selected          { background: var(--cyan-dim); }
+.tl-row.tl-full               { opacity: 0.4; cursor: not-allowed; }
 
 .tl-time {
-  font-size: .75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-secondary, #64748b);
   font-variant-numeric: tabular-nums;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
-.tl-selected .tl-time { color: var(--ocean); }
+.tl-selected .tl-time { color: var(--cyan); }
 
 .tl-bar-wrap { display: flex; align-items: center; }
 .tl-bar {
-  width: 3px;
-  height: 20px;
+  width: 2.5px; height: 18px;
   border-radius: 2px;
-  background: var(--border);
-  transition: background .15s;
+  background: var(--surface-border, #e2e8f0);
+  transition: background 0.15s;
 }
-.tl-bar.active { background: var(--ocean); }
+.tl-bar.active { background: var(--cyan); }
 
 .tl-status { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 
 .tl-pill {
-  font-size: .68rem;
-  font-weight: 500;
+  font-size: 0.65rem;
+  font-weight: 600;
   padding: 2px 7px;
   border-radius: 20px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
-.pill-ok   { background: var(--green-lt); color: var(--green); }
-.pill-full { background: var(--red-lt); color: var(--red); }
+.pill-ok   { background: var(--green-dim); color: var(--green); }
+.pill-full { background: var(--red-dim);   color: var(--red);   }
 
-.tl-free { font-size: .72rem; color: #bec7d0; font-style: italic; }
-.tl-mine { font-size: .75rem; font-weight: 700; color: var(--ocean); }
+.tl-free { font-size: 0.7rem; color: var(--text-secondary, #64748b); font-style: italic; opacity: 0.6; }
+.tl-mine { font-size: 0.72rem; font-weight: 700; color: var(--cyan); }
 
-/* ── Duración pills ── */
-.pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+/* ── Duración pills ─────────────────────────────────── */
+.pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .dur-pill {
-  padding: 9px 16px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  font-family: 'DM Sans', sans-serif;
-  font-size: .84rem;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  background: var(--surface-bg, #ffffff);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.82rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--text-secondary, #64748b);
   cursor: pointer;
-  transition: all .15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
   flex: 1;
-  min-width: 70px;
+  min-width: 60px;
   text-align: center;
 }
-.dur-pill:hover  { border-color: var(--ocean); color: var(--ocean); }
-.dur-pill.active { background: var(--ocean); border-color: var(--ocean); color: #fff; font-weight: 600; }
-
-/* ── Embarcaciones ── */
-.canoa-scroll-wrap {
-  position: relative;
+.dur-pill:hover { border-color: var(--cyan); color: var(--cyan); }
+.dur-pill.active {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  font-weight: 600;
 }
+
+/* ── Embarcaciones ──────────────────────────────────── */
+.canoa-scroll-wrap { position: relative; }
 
 .canoa-scroll {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   scrollbar-width: none;
 }
 .canoa-scroll::-webkit-scrollbar { display: none; }
 
 .canoa-fade {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 56px;
-  height: calc(100% - 6px);
-  background: linear-gradient(to right, transparent, #f8f9fb);
+  top: 0; right: 0;
+  width: 48px;
+  height: calc(100% - 4px);
+  background: linear-gradient(to right, transparent, var(--content-bg, #f8fafc));
   pointer-events: none;
-  border-radius: 0 14px 14px 0;
+  border-radius: 0 10px 10px 0;
 }
 
 .canoa-card {
@@ -521,20 +565,26 @@ export default defineComponent({
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 12px 10px 10px;
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
+  padding: 11px 8px 9px;
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--surface-bg, #ffffff);
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  transition: all .15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: border-color 0.15s, background 0.15s;
   flex-shrink: 0;
-  width: 100px;
+  width: 88px;
   text-align: center;
 }
-.canoa-card:hover:not(.disabled) { border-color: var(--ocean); background: var(--ocean-lt); }
-.canoa-card.active { border-color: var(--ocean); background: var(--ocean-lt); }
-.canoa-card.disabled { opacity: .38; cursor: not-allowed; }
+.canoa-card:hover:not(.disabled) {
+  border-color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.canoa-card.active {
+  border-color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.canoa-card.disabled { opacity: 0.35; cursor: not-allowed; }
 
 .canoa-top {
   position: relative;
@@ -543,49 +593,62 @@ export default defineComponent({
   justify-content: center;
   margin-bottom: 2px;
 }
-.canoa-icon { font-size: 1.8rem; line-height: 1; }
+.canoa-icon { font-size: 1.6rem; line-height: 1; }
+
 .canoa-check {
-  position: absolute;
-  top: -2px;
-  right: 4px;
-  font-size: .7rem;
-  font-weight: 700;
-  color: var(--ocean);
-  background: var(--ocean-lt);
+  position: absolute; top: -2px; right: 4px;
+  font-size: 0.65rem; font-weight: 700;
+  color: var(--cyan);
+  background: var(--cyan-dim);
   border-radius: 50%;
-  width: 16px; height: 16px;
+  width: 15px; height: 15px;
   display: flex; align-items: center; justify-content: center;
 }
 .canoa-na {
-  position: absolute;
-  top: -2px;
-  right: 4px;
-  font-size: .7rem;
-  color: var(--muted);
+  position: absolute; top: -2px; right: 4px;
+  font-size: 0.65rem;
+  color: var(--text-secondary, #64748b);
 }
-.canoa-nombre { font-size: .72rem; font-weight: 600; color: var(--text); line-height: 1.2; }
-.canoa-meta   { font-size: .67rem; color: var(--muted); }
 
-/* ── Equipamiento ── */
+.canoa-nombre {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  line-height: 1.2;
+  transition: color 0.25s ease;
+}
+.canoa-meta {
+  font-size: 0.65rem;
+  color: var(--text-secondary, #64748b);
+}
+
+/* ── Equipamiento ───────────────────────────────────── */
 .equip-list {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
+  background: var(--surface-bg, #ffffff);
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  border-radius: 10px;
   overflow: hidden;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .equip-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+  border-bottom: 0.5px solid var(--surface-border, #e2e8f0);
 }
 .equip-row:last-child { border-bottom: none; }
 
-.equip-left { display: flex; flex-direction: column; gap: 2px; }
-.equip-name { font-size: .86rem; font-weight: 500; color: var(--text); }
-.equip-sub  { font-size: .72rem; color: var(--muted); }
+.equip-left  { display: flex; flex-direction: column; gap: 2px; }
+.equip-name  {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary, #0f172a);
+  transition: color 0.25s ease;
+}
+.equip-sub   { font-size: 0.7rem; color: var(--text-secondary, #64748b); }
 
 .equip-right {
   display: flex;
@@ -594,76 +657,80 @@ export default defineComponent({
   flex-shrink: 0;
 }
 .equip-toggle-label {
-  font-size: .76rem;
-  color: var(--muted);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.72rem;
+  color: var(--text-secondary, #64748b);
   font-weight: 500;
   user-select: none;
 }
 
 /* Toggle switch */
 .toggle-track {
-  width: 42px;
-  height: 24px;
+  width: 38px; height: 22px;
   border-radius: 999px;
-  background: var(--border);
+  background: var(--surface-border, #e2e8f0);
   cursor: pointer;
   position: relative;
-  transition: background .2s;
+  transition: background 0.2s;
   flex-shrink: 0;
 }
-.toggle-track.on { background: var(--ocean); }
+.toggle-track.on { background: var(--cyan); }
+
 .toggle-thumb {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
+  top: 3px; left: 3px;
+  width: 16px; height: 16px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.18);
-  transition: transform .2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
 }
-.toggle-track.on .toggle-thumb { transform: translateX(18px); }
+.toggle-track.on .toggle-thumb { transform: translateX(16px); }
 
-/* ── Textarea ── */
+/* ── Textarea ───────────────────────────────────────── */
 .field-textarea {
   width: 100%;
-  padding: 12px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: .86rem;
-  color: var(--text);
-  background: var(--surface);
+  padding: 11px 13px;
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary, #0f172a);
+  background: var(--surface-bg, #ffffff);
   resize: none;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.25s, color 0.25s;
 }
-.field-textarea:focus { outline: none; border-color: var(--ocean); box-shadow: 0 0 0 3px var(--ocean-lt); }
-.field-textarea::placeholder { color: #b0bcc8; }
+.field-textarea:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px var(--cyan-ring);
+}
+.field-textarea::placeholder { color: var(--text-secondary, #64748b); opacity: 0.5; }
 
-/* ── Footer CTA ── */
+/* ── Footer CTA ─────────────────────────────────────── */
 .form-footer {
-  padding: 14px 18px;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
+  padding: 13px 18px;
+  background: var(--surface-bg, #ffffff);
+  border-top: 0.5px solid var(--surface-border, #e2e8f0);
   flex-shrink: 0;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .submit-btn {
   width: 100%;
-  padding: 15px;
-  background: var(--ocean);
-  color: #fff;
+  padding: 13px;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #0f1117;
   border: none;
-  border-radius: 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: .92rem;
-  font-weight: 600;
+  border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
   cursor: pointer;
-  letter-spacing: .02em;
-  transition: background .15s, transform .1s, opacity .15s;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s, transform 0.1s;
 }
-.submit-btn:hover:not(:disabled) { background: var(--ocean-dk); transform: translateY(-1px); }
+.submit-btn:hover:not(:disabled)  { opacity: 0.9; transform: translateY(-1px); }
 .submit-btn:active:not(:disabled) { transform: translateY(0); }
-.submit-btn:disabled { opacity: .35; cursor: not-allowed; }
+.submit-btn:disabled              { opacity: 0.3; cursor: not-allowed; }
 </style>

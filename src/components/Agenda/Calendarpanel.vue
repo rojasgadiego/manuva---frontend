@@ -7,9 +7,9 @@
 
         <div class="header-right">
           <div class="legend">
-            <span class="legend-item"><span class="legend-bar available"></span>Disponible</span>
-            <span class="legend-item"><span class="legend-bar partial"></span>Casi lleno</span>
-            <span class="legend-item"><span class="legend-bar full"></span>Sin cupos</span>
+            <span class="legend-item"><span class="legend-dot available"></span>Disponible</span>
+            <span class="legend-item"><span class="legend-dot partial"></span>Casi lleno</span>
+            <span class="legend-item"><span class="legend-dot full"></span>Sin cupos</span>
           </div>
           <button class="nav-btn" @click="$emit('next-month')">›</button>
         </div>
@@ -102,40 +102,37 @@ export default defineComponent({
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
-* { box-sizing: border-box; }
-
+/* ── Variables de estado (fijas en ambos temas) ── */
 .calendar-panel {
+  --green:      #22c55e;
+  --green-bg:   rgba(34, 197, 94, 0.08);
+  --yellow:     #f59e0b;
+  --yellow-bg:  rgba(245, 158, 11, 0.08);
+  --red:        #ef4444;
+  --red-bg:     rgba(239, 68, 68, 0.08);
+  --cyan:       #38bdf8;
+
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-
-  --ocean:     #0a7ea4;
-  --ocean-lt:  #e0f4fb;
-  --text:      #1a2332;
-  --muted:     #6b7a8d;
-  --border:    #dde4ea;
-  --green:     #0d9066;
-  --green-lt:  #e6f7f2;
-  --yellow:    #b45309;
-  --yellow-lt: #fef3c7;
-  --red:       #c0392b;
-  --red-lt:    #fdecea;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
+/* ── Card — usa variables del tema padre ── */
 .calendar-card {
-  background: #fff;
-  border-radius: 16px;
+  background: var(--surface-bg, #141820);
+  border: 0.5px solid var(--surface-border, #1e2433);
+  border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.07);
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 /* ── Header ── */
@@ -143,128 +140,145 @@ export default defineComponent({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  gap: 12px;
 }
+
 .calendar-header h2 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.3rem;
-  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #e2e8f0);
   margin: 0;
   text-transform: capitalize;
+  letter-spacing: -0.3px;
+  transition: color 0.25s ease;
 }
+
 .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 .nav-btn {
-  border: 1.5px solid var(--border);
-  background: #fff;
-  width: 34px; height: 34px;
-  border-radius: 50%;
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  border: 0.5px solid var(--surface-border, #1e2433);
+  background: transparent;
   cursor: pointer;
-  font-size: 1.1rem;
-  color: var(--muted);
+  font-size: 1rem;
+  color: var(--text-secondary, #64748b);
   display: flex; align-items: center; justify-content: center;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   flex-shrink: 0;
 }
-.nav-btn:hover { background: var(--ocean-lt); color: var(--ocean); border-color: var(--ocean); }
+
+.nav-btn:hover {
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
 
 /* ── Leyenda ── */
 .legend {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
+
 .legend-item {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: .68rem;
-  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
   white-space: nowrap;
 }
-.legend-bar {
-  width: 4px;
-  height: 12px;
-  border-radius: 3px;
+
+.legend-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
-.legend-bar.available { background: var(--green); }
-.legend-bar.partial   { background: var(--yellow); }
-.legend-bar.full      { background: var(--red); }
+
+.legend-dot.available { background: var(--green); }
+.legend-dot.partial   { background: var(--yellow); }
+.legend-dot.full      { background: var(--red); }
 
 /* ── Grid ── */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: auto repeat(6, 1fr);
-  gap: 6px;
+  gap: 5px;
   flex: 1;
 }
+
 .calendar-day-name {
   text-align: center;
-  font-size: .72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-secondary, #64748b);
   padding-bottom: 6px;
   text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: 0.06em;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* ── Día base ── */
 .calendar-day {
-  background: #f0f9fc;
-  border-radius: 10px;
-  padding: 8px 8px 8px 12px;
+  background: var(--surface-bg, #141820);
+  border-radius: 8px;
+  padding: 7px 7px 6px;
   cursor: pointer;
-  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1.5px solid transparent;
-  border-left-width: 4px;
+  border: 0.5px solid var(--surface-border, #1e2433);
+  border-bottom-width: 2px;
 }
 
-/* ── Estados — barra lateral de color ── */
-.calendar-day.empty     { border-left-color: var(--border); }
-.calendar-day.available { border-left-color: var(--green);  background: #fff; }
-.calendar-day.partial   { border-left-color: var(--yellow); background: #fff; }
-.calendar-day.full      { border-left-color: var(--red);    background: #fff; }
+/* ── Estados — borde inferior de color ── */
+.calendar-day.empty     { border-bottom-color: var(--surface-border, #1e2433); }
+.calendar-day.available { border-bottom-color: var(--green); }
+.calendar-day.partial   { border-bottom-color: var(--yellow); }
+.calendar-day.full      { border-bottom-color: var(--red); }
 
 /* ── Hover ── */
 .calendar-day:hover:not(.past):not(.inactive) {
-  background: var(--ocean-lt);
-  border-color: var(--ocean);
-  border-left-color: var(--ocean);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(10,126,164,.15);
+  background: rgba(56, 189, 248, 0.07);
+  border-color: rgba(56, 189, 248, 0.3);
+  border-bottom-color: var(--cyan);
+  transform: translateY(-1px);
 }
 
 /* ── Hoy ── */
 .calendar-day.today {
-  border-color: var(--ocean) !important;
-  border-left-color: var(--ocean) !important;
-  background: var(--ocean-lt) !important;
+  border-color: var(--cyan) !important;
+  border-bottom-color: var(--cyan) !important;
+  background: rgba(56, 189, 248, 0.08) !important;
 }
 
 /* ── Seleccionado ── */
 .calendar-day.selected {
-  background: var(--ocean) !important;
-  border-color: var(--ocean) !important;
-  border-left-color: rgba(255,255,255,.4) !important;
+  background: var(--cyan) !important;
+  border-color: var(--cyan) !important;
 }
+
 .calendar-day.selected .day-number,
 .calendar-day.selected .salidas-count,
-.calendar-day.selected .cupos-texto  { color: #fff; }
-.calendar-day.selected .ocupacion-bar  { background: rgba(255,255,255,.25); }
-.calendar-day.selected .ocupacion-fill { background: #fff !important; }
-.calendar-day.selected .status-dot     { background: rgba(255,255,255,.7) !important; }
+.calendar-day.selected .cupos-texto { color: #0f1117; }
+
+.calendar-day.selected .ocupacion-bar  { background: rgba(15, 17, 23, 0.15); }
+.calendar-day.selected .ocupacion-fill { background: #0f1117 !important; }
+.calendar-day.selected .status-dot     { background: rgba(15, 17, 23, 0.5) !important; }
 
 /* ── Inactivo / pasado ── */
-.calendar-day.inactive { opacity: .35; pointer-events: none; }
-.calendar-day.past     { opacity: .3; background: #f0f2f5; cursor: not-allowed; }
-.calendar-day.past:hover { transform: none; box-shadow: none; }
+.calendar-day.inactive { opacity: 0.2; pointer-events: none; }
+.calendar-day.past     { opacity: 0.25; cursor: not-allowed; }
+.calendar-day.past:hover { transform: none; }
 
 /* ── Cabecera del día ── */
 .day-header {
@@ -272,16 +286,20 @@ export default defineComponent({
   justify-content: space-between;
   align-items: center;
 }
+
 .day-number {
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
-  font-size: .85rem;
-  color: var(--text);
+  font-size: 0.8rem;
+  color: var(--text-primary, #e2e8f0);
+  transition: color 0.25s ease;
 }
+
 .status-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  width: 6px; height: 6px;
+  border-radius: 50%; flex-shrink: 0;
 }
+
 .status-dot.available { background: var(--green); }
 .status-dot.partial   { background: var(--yellow); }
 .status-dot.full      { background: var(--red); }
@@ -292,38 +310,40 @@ export default defineComponent({
   flex-direction: column;
   gap: 3px;
 }
+
 .salidas-count {
-  font-size: .62rem;
+  font-size: 0.6rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-secondary, #64748b);
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
+
 .ocupacion-bar {
-  height: 4px;
-  background: rgba(0,0,0,.08);
-  border-radius: 4px;
+  height: 3px;
+  background: var(--surface-border, #1e2433);
+  border-radius: 3px;
   overflow: hidden;
 }
+
 .ocupacion-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: width 0.3s ease;
 }
+
 .ocupacion-fill.available { background: var(--green); }
 .ocupacion-fill.partial   { background: var(--yellow); }
 .ocupacion-fill.full      { background: var(--red); }
 
 .cupos-texto {
-  font-size: .58rem;
-  color: var(--muted);
+  font-size: 0.58rem;
+  color: var(--text-secondary, #64748b);
 }
 
 /* ── Mobile ── */
 @media (max-width: 600px) {
-  .calendar-day {
-    padding: 6px 4px 6px 8px;
-    border-radius: 8px;
-  }
-  .day-header { justify-content: center; }
+  .calendar-day { padding: 6px 4px; border-radius: 6px; }
+  .day-header   { justify-content: center; }
   .status-dot, .day-summary, .legend { display: none; }
 }
 </style>
