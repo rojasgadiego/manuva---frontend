@@ -64,24 +64,26 @@
       </section>
 
       <!-- ── Próxima salida ── -->
-      <section class="section" v-if="proximaSalida">
-        <h2 class="section__title">Mi próxima salida</h2>
-        <div class="next-card">
-          <div class="next-card__accent"></div>
-          <div class="next-card__body">
-            <div class="next-card__date-box">
-              <span class="date-box__day">{{ proximaSalida.dia }}</span>
-              <span class="date-box__month">{{ proximaSalida.mes }}</span>
+      <section class="section" v-if="proximasSalidas.length">
+        <h2 class="section__title">Mis próximas salidas</h2>
+        <div class="next-cards-row">
+          <div class="next-card" v-for="(s, i) in proximasSalidas" :key="i">
+            <div class="next-card__accent"></div>
+            <div class="next-card__body">
+              <div class="next-card__date-box">
+                <span class="date-box__day">{{ s.dia }}</span>
+                <span class="date-box__month">{{ s.mes }}</span>
+              </div>
+              <div class="next-card__info">
+                <p class="next-card__title">{{ s.embarcacion }} · {{ s.hora }}</p>
+                <p class="next-card__meta">{{ s.duracion }} · {{ s.equipo }}</p>
+                <p class="next-card__meta">
+                  Patrón: {{ s.patron }} ·
+                  <span class="meta__confirmados">{{ s.confirmados }}/{{ s.capacidad }} confirmados</span>
+                </p>
+              </div>
+              <button class="next-card__cancel" @click="cancelarSalida(i)">Cancelar</button>
             </div>
-            <div class="next-card__info">
-              <p class="next-card__title">{{ proximaSalida.embarcacion }} · {{ proximaSalida.hora }}</p>
-              <p class="next-card__meta">{{ proximaSalida.duracion }} · {{ proximaSalida.equipo }}</p>
-              <p class="next-card__meta">
-                Patrón: {{ proximaSalida.patron }} ·
-                <span class="meta__confirmados">{{ proximaSalida.confirmados }}/{{ proximaSalida.capacidad }} confirmados</span>
-              </p>
-            </div>
-            <button class="next-card__cancel" @click="cancelarSalida">Cancelar</button>
           </div>
         </div>
       </section>
@@ -266,21 +268,34 @@ export default defineComponent({
 
     // ── Próxima salida ─────────────────────────────
     // En producción: cargar desde store / API
-    const proximaSalida = ref({
-      dia:          '17',
-      mes:          'mar',
-      embarcacion:  'Canoa V6',
-      hora:         '08:00 h',
-      duracion:     '1 hora',
-      equipo:       'Remo propio',
-      patron:       'Carlos Vega',
-      confirmados:  4,
-      capacidad:    6,
-    })
+    const proximasSalidas = ref([
+      {
+        dia:         '17',
+        mes:         'mar',
+        embarcacion: 'Canoa V6',
+        hora:        '08:00 h',
+        duracion:    '1 hora',
+        equipo:      'Remo propio',
+        patron:      'Carlos Vega',
+        confirmados: 4,
+        capacidad:   6,
+      },
+      {
+        dia:         '20',
+        mes:         'mar',
+        embarcacion: 'Canoa V1',
+        hora:        '10:00 h',
+        duracion:    '1 hora',
+        equipo:      'Remo propio',
+        patron:      'Carlos Vega',
+        confirmados: 4,
+        capacidad:   6,
+      },
+    ])
 
-    const cancelarSalida = () => {
+    const cancelarSalida = (i) => {
       // dispatch store o llamada API
-      console.log('Cancelar salida')
+      console.log('Cancelar salida', i)
     }
 
     // ── Clima — Open-Meteo ─────────────────────────
@@ -449,7 +464,7 @@ export default defineComponent({
     return {
       usuario, iniciales, nombreCorto, fechaHoy, anioActual,
       stats, actividadMes, certVencePronto,
-      proximaSalida, cancelarSalida,
+      proximasSalidas, cancelarSalida,
       forecast, diaSeleccionado, diaActual, climaCargando, climaError, cargarClima, salidasV6, unirseASalida, irAgenda,
       avisos,
     }
@@ -666,6 +681,12 @@ export default defineComponent({
 .sub--warn { color: var(--amber); font-weight: 600; }
 
 /* ── Próxima salida ───────────────────────────── */
+.next-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 8px;
+}
+
 .next-card {
   background: var(--surface-bg, #ffffff);
   border: 0.5px solid var(--surface-border, #e2e8f0);
