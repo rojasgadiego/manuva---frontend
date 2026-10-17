@@ -129,10 +129,10 @@ export default {
 
     // ── Usuario ───────────────────────────────────────────
     const currentUser  = computed(() => store.getters['auth/currentUser'])
-    const userRoles    = computed(() => store.getters['auth/userRoles'] || [])
+    const userRole     = computed(() => store.getters['auth/userRole'])
     const userInitials = computed(() => {
-      if (!currentUser.value) return '?'
-      return (currentUser.value.email || '').charAt(0).toUpperCase()
+      const nombre = currentUser.value?.nombreCompleto || currentUser.value?.username || ''
+      return nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'
     })
 
     const currentRouteName = computed(() => route.meta.title || route.name || 'Dashboard')
@@ -151,12 +151,9 @@ export default {
       { name: 'Mi perfil', path: '/perfil',    icon: '👤' },
     ]
 
+    // item.roles: si se define, el ítem solo se muestra a esos roles
     const filteredMenuItems = computed(() =>
-      menuItems.filter(item => {
-        if (!item.roles?.length) return true
-        if (!userRoles.value?.length) return false
-        return item.roles.some(r => userRoles.value.includes(r))
-      })
+      menuItems.filter(item => !item.roles?.length || item.roles.includes(userRole.value))
     )
 
     const isActive = (path) => route.path === path || route.path.startsWith(`${path}/`)
@@ -203,7 +200,7 @@ export default {
 
     return {
       isSidebarCollapsed, isMobile,
-      currentUser, userRoles, userInitials,
+      currentUser, userRole, userInitials,
       currentRouteName, currentDate,
       filteredMenuItems,
       isDark, theme, setTheme,

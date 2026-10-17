@@ -63,6 +63,15 @@ const routes = [
     }
   },
   {
+    path: '/salidas/:id(\\d+)',
+    name: 'SalidaDetalle',
+    component: () => import('@/views/Private/SalidaDetalleView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Detalle de salida'
+    }
+  },
+  {
     path: '/historial',
     name: 'Historial',
     component: HistorialView,

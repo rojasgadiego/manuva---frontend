@@ -18,8 +18,11 @@ const auth = {
     isLoading:       state => state.loading,
     authError:       state => state.error,
     userRole:        state => state.user?.rol || null,
+    idRemador:       state => state.user?.idRemador ?? null,
     hasRole:         state => role => state.user?.rol === role,
-    hasAnyRole:      state => roleList => roleList.includes(state.user?.rol)
+    hasAnyRole:      state => roleList => roleList.includes(state.user?.rol),
+    // Puede gestionar salidas de otros (iniciar, finalizar, cancelar): igual que EsStaffSalidas en la API
+    isStaff:         state => ['Administrador', 'Entrenador'].includes(state.user?.rol)
   },
 
   mutations: {
@@ -75,7 +78,11 @@ const auth = {
         id:             data.id,
         username:       data.username,
         nombreCompleto: data.remador?.nombreCompleto ?? data.username,
-        rol:            data.rol
+        rol:            data.rol,
+        // Las salidas referencian al remador, no al usuario (son ids distintos)
+        idRemador:      data.remador?.id ?? null,
+        tieneRemoPropio:       !!data.remador?.tieneRemoPropio,
+        tieneSalvavidasPropio: !!data.remador?.tieneSalvavidasPropio
       }
 
       commit('SET_AUTH', { user })

@@ -1,10 +1,14 @@
 <template>
   <router-view></router-view>
+  <ToastContainer />
 </template>
 
 <script>
+import ToastContainer from '@/views/Private/utils/toastContainerView.vue'
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: { ToastContainer },
 }
 </script>
 

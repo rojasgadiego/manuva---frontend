@@ -20,7 +20,7 @@
             v-if="view === 'form'"
             :selected-day="selectedDay"
             @go-back="goBack"
-            @submit="handleSubmit"
+            @cambio="onCambio"
           />
         </Transition>
 
@@ -31,52 +31,54 @@
 
 <script>
 import { defineComponent, ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppLayout        from '@/components/Layout/AppLayout.vue'
 import CalendarPanel    from '@/components/Agenda/Calendarpanel.vue'
 import FormularioAgenda from '@/components/Agenda/FormularioAgenda.vue'
 import salidaService    from '@/services/salida.service'
+import { useToast }     from '@/utils/useToast'
+import { mensajeError } from '@/utils/apiError'
+
+const formatDate = (d) => {
+  const y   = d.getFullYear()
+  const m   = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** Primer lunes visible en la grilla de 6 semanas del mes. */
+const inicioGrilla = (mes) => {
+  const primero = new Date(mes.getFullYear(), mes.getMonth(), 1)
+  const offset  = primero.getDay() === 0 ? 6 : primero.getDay() - 1
+  return new Date(mes.getFullYear(), mes.getMonth(), 1 - offset)
+}
 
 export default defineComponent({
   name: 'AgendaCanoasDashboard',
   components: { AppLayout, CalendarPanel, FormularioAgenda },
 
   setup() {
-    const view         = ref('calendar')
-    const selectedDay  = ref(null)
-    const currentMonth = ref(new Date())
+    const route  = useRoute()
+    const router = useRouter()
+    const { mostrarToast } = useToast()
+
+    const view            = ref('calendar')
+    const selectedDay     = ref(null)
+    const currentMonth    = ref(new Date())
     const salidasPorFecha = ref({})
-    const cargando     = ref(false)
-    const cache        = {}
+    const cargando        = ref(false)
 
-    // ── Helpers ───────────────────────────────────
-    const formatDate = (d) => {
-      const y   = d.getFullYear()
-      const m   = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      return `${y}-${m}-${day}`
-    }
-
-    const getRango = () => {
-      const hoy    = new Date()
-      const fin    = new Date()
-      fin.setDate(hoy.getDate() + 14)
-
-      return {
-        fechaInicio: formatDate(hoy),
-        fechaFin:    formatDate(fin),
-      }
-    }
-
-    // ── Cargar resumen desde la API ───────────────
+    // ── Cargar resumen del rango visible del mes ──────
     const cargarSalidas = async () => {
       cargando.value = true
       try {
-        const { fechaInicio, fechaFin } = getRango()
-        const response = await salidaService.getResumenRango(fechaInicio, fechaFin)
-        const dias     = response.data?.data ?? []
+        const inicio = inicioGrilla(currentMonth.value)
+        const fin    = new Date(inicio)
+        fin.setDate(inicio.getDate() + 41)
 
+        const response = await salidaService.getResumenRango(formatDate(inicio), formatDate(fin))
         const agrupadas = {}
-        dias.forEach(d => {
+        ;(response.data?.data ?? []).forEach(d => {
           const fecha = d.fecha?.substring(0, 10)
           if (!fecha) return
           agrupadas[fecha] = {
@@ -85,16 +87,13 @@ export default defineComponent({
             cuposDisponibles: d.cuposDisponibles,
           }
         })
-
         salidasPorFecha.value = agrupadas
       } catch (error) {
-        console.error('Error al cargar resumen:', error)
+        mostrarToast(mensajeError(error, 'No se pudo cargar el calendario.'), 'error', 5000)
       } finally {
         cargando.value = false
       }
     }
-
-    onMounted(cargarSalidas)
 
     // ── Calendario ────────────────────────────────
     const monthYearLabel = computed(() =>
@@ -121,32 +120,19 @@ export default defineComponent({
     }
 
     const calendarDays = computed(() => {
-      const year  = currentMonth.value.getFullYear()
-      const month = currentMonth.value.getMonth()
-      const start    = new Date(year, month, 1)
-      const startDay = start.getDay() === 0 ? 6 : start.getDay() - 1
-      const firstVisible = new Date(year, month, 1 - startDay)
-      const days = []
-      for (let i = 0; i < 42; i++) {
-        const cur = new Date(firstVisible)
-        cur.setDate(firstVisible.getDate() + i)
-        days.push(buildDay(cur, cur.getMonth() === month))
-      }
-      return days
+      const inicio = inicioGrilla(currentMonth.value)
+      const month  = currentMonth.value.getMonth()
+      return Array.from({ length: 42 }, (_, i) => {
+        const cur = new Date(inicio)
+        cur.setDate(inicio.getDate() + i)
+        return buildDay(cur, cur.getMonth() === month)
+      })
     })
 
-    const prevMonth = () => {
+    const cambiarMes = (delta) => {
       currentMonth.value = new Date(
         currentMonth.value.getFullYear(),
-        currentMonth.value.getMonth() - 1, 1
-      )
-      cargarSalidas()
-    }
-
-    const nextMonth = () => {
-      currentMonth.value = new Date(
-        currentMonth.value.getFullYear(),
-        currentMonth.value.getMonth() + 1, 1
+        currentMonth.value.getMonth() + delta, 1
       )
       cargarSalidas()
     }
@@ -155,24 +141,37 @@ export default defineComponent({
     const selectDay = (day) => {
       selectedDay.value = day
       view.value = 'form'
+      router.replace({ query: { ...route.query, fecha: day.date } })
     }
 
     const goBack = () => {
       view.value = 'calendar'
+      const { fecha, ...resto } = route.query // eslint-disable-line no-unused-vars
+      router.replace({ query: resto })
     }
 
-    const handleSubmit = async (payload) => {
-      console.log('Nueva reserva:', payload)
-      // Invalidar cache del mes actual para reflejar la nueva reserva
-      const key = `${currentMonth.value.getFullYear()}-${currentMonth.value.getMonth()}`
-      delete cache[key]
-      await cargarSalidas()
-      goBack()
-    }
+    // El formulario avisa cuando cambió algo (reserva creada, unirse, salir): refrescar cupos
+    const onCambio = () => cargarSalidas()
+
+    onMounted(async () => {
+      // /agenda?fecha=YYYY-MM-DD abre directamente ese día (p. ej. desde el dashboard)
+      const fecha = route.query.fecha
+      if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        const [y, m, d] = fecha.split('-').map(Number)
+        currentMonth.value = new Date(y, m - 1, 1)
+        await cargarSalidas()
+        const dia = calendarDays.value.find(x => x.date === fecha) ?? buildDay(new Date(y, m - 1, d), true)
+        if (!dia.isPast) selectDay(dia)
+      } else {
+        await cargarSalidas()
+      }
+    })
 
     return {
-      view, selectedDay, goBack, selectDay, handleSubmit,
-      calendarDays, monthYearLabel, prevMonth, nextMonth,
+      view, selectedDay, goBack, selectDay, onCambio,
+      calendarDays, monthYearLabel,
+      prevMonth: () => cambiarMes(-1),
+      nextMonth: () => cambiarMes(1),
       cargando,
     }
   },

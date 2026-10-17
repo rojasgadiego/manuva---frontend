@@ -38,11 +38,9 @@ axiosInstance.interceptors.response.use(
       router.push('/login')
     }
 
+    // 403 no redirige: la API lo usa para acciones puntuales sin permiso (p. ej. cancelar
+    // una salida ajena) y la vista que llamó muestra el mensaje con un toast.
     switch (error.response?.status) {
-      case 403:
-        router.push('/forbidden')
-        break
-
       case 404:
         if (!originalRequest.url.includes('/check/')) {
           console.error('Recurso no encontrado:', originalRequest.url)

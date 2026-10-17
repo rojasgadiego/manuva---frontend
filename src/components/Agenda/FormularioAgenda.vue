@@ -12,7 +12,7 @@
 
       <div class="form-date-badge">
         <div>
-          <p class="badge-sup">Agendar salida</p>
+          <p class="badge-sup">Agenda del día</p>
           <p class="badge-title">{{ dateLabel }}</p>
         </div>
         <span class="badge-icon">🛶</span>
@@ -22,96 +22,175 @@
     <!-- Scrollable body -->
     <div class="form-body">
 
-      <!-- ① Hora -->
+      <!-- Requisitos pendientes para reservar / unirse -->
+      <div v-if="dia && !dia.requisitos.puedeReservar" class="notice notice--warn">
+        <p class="notice__title">Todavía no puedes reservar ni unirte a salidas</p>
+        <ul class="notice__list">
+          <li v-for="p in dia.requisitos.pendientes" :key="p">{{ p }}</li>
+        </ul>
+        <p class="notice__hint">Regulariza estos puntos con la directiva del club.</p>
+      </div>
+
+      <!-- ① Salidas del día -->
       <div class="field-block">
-        <label class="field-label">Hora de salida</label>
-        <div class="select-wrapper">
-          <select v-model="localForm.hora" class="field-select">
-            <option value="" disabled>Selecciona una hora</option>
-            <option v-for="t in availableTimes" :key="t.value" :value="t.value" :disabled="t.disabled">
-              {{ t.label }}
-            </option>
-          </select>
-          <svg class="select-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <label class="field-label">Salidas de este día</label>
+
+        <div v-if="cargandoDia" class="day-list">
+          <div v-for="i in 2" :key="i" class="day-item day-item--skeleton"></div>
         </div>
 
-        <!-- Timeline colapsable -->
-        <button class="timeline-toggle" @click="showTimeline = !showTimeline" type="button">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Ver disponibilidad del día
-          <svg class="chevron" :class="{ open: showTimeline }" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
+        <p v-else-if="!salidasDia.length" class="empty-note">
+          Aún no hay salidas este día. {{ puedeCrear ? '¡Crea la primera abajo!' : '' }}
+        </p>
 
-        <Transition name="expand">
-          <div v-if="showTimeline" class="timeline-inline">
-            <div
-              v-for="time in times" :key="time"
-              class="tl-row"
-              :class="{
-                'tl-selected': localForm.hora === time,
-                'tl-full': isTimeFull(time)
-              }"
-              @click="selectHour(time)"
-            >
-              <span class="tl-time">{{ time }}</span>
-              <div class="tl-bar-wrap">
-                <div class="tl-bar" :class="{ active: salidasPorTime(time).length > 0 || localForm.hora === time }"></div>
+        <div v-else class="day-list">
+          <div v-for="s in salidasDia" :key="s.id" class="day-item" :class="{ 'day-item--mine': s.soyParticipante }">
+            <div class="day-item__time">
+              <span class="day-item__hora">{{ hora(s.fechaHoraProgramada) }}</span>
+              <span class="day-item__dur">{{ s.duracionMin }} min</span>
+            </div>
+
+            <div class="day-item__info">
+              <p class="day-item__title">
+                {{ s.nombreCanoa || s.codigoCanoa }}
+                <span class="chip">{{ s.tipoCanoa }}</span>
+                <span v-if="s.estado !== 'Reservada'" class="chip chip--estado">{{ s.estado }}</span>
+              </p>
+              <p class="day-item__meta">
+                Responsable: {{ s.soyResponsable ? 'tú' : s.responsable }}
+              </p>
+              <div class="seats" :aria-label="`${s.participantes} de ${s.capacidadMax} cupos ocupados`">
+                <span
+                  v-for="i in s.capacidadMax" :key="i"
+                  class="seat" :class="i <= s.participantes ? 'seat--taken' : 'seat--open'"
+                ></span>
+                <span class="seats__label" :class="{ 'seats__label--full': s.cuposLibres <= 0 }">
+                  {{ s.cuposLibres > 0 ? `${s.cuposLibres} libre${s.cuposLibres !== 1 ? 's' : ''}` : 'Completa' }}
+                </span>
               </div>
-              <span class="tl-status">
-                <template v-if="salidasPorTime(time).length">
-                  <span v-for="(s, i) in salidasPorTime(time)" :key="i" class="tl-pill" :class="s.cupos === 0 ? 'pill-full' : 'pill-ok'">
-                    {{ s.cupos === 0 ? 'Completo' : s.cupos + ' cupo' + (s.cupos !== 1 ? 's' : '') }}
-                  </span>
-                </template>
-                <span v-else class="tl-free">Libre</span>
-              </span>
-              <span v-if="localForm.hora === time" class="tl-mine">✓</span>
+            </div>
+
+            <div class="day-item__actions">
+              <button
+                v-if="puedeUnirse(s)"
+                class="btn btn--primary" :disabled="accionEnCurso === s.id"
+                @click="unirse(s)" type="button"
+              >Unirme</button>
+              <button
+                v-else-if="s.soyParticipante && !s.soyResponsable && esFutura(s)"
+                class="btn btn--ghost" :disabled="accionEnCurso === s.id"
+                @click="salir(s)" type="button"
+              >Salir</button>
+              <router-link :to="`/salidas/${s.id}`" class="btn btn--link">Ver</router-link>
             </div>
           </div>
-        </Transition>
-      </div>
-
-      <!-- ② Duración -->
-      <div class="field-block">
-        <label class="field-label">Duración</label>
-        <div class="pill-row">
-          <button
-            v-for="d in duraciones" :key="d.value"
-            class="dur-pill" :class="{ active: localForm.duracion === d.value }"
-            @click="localForm.duracion = d.value" type="button"
-          >{{ d.label }}</button>
         </div>
       </div>
 
-      <!-- ③ Embarcación -->
-      <div class="field-block">
-        <label class="field-label">Embarcación</label>
-        <div class="canoa-scroll-wrap">
-          <div class="canoa-scroll" ref="canoeScroll" @scroll="onCanoeScroll">
-            <button
-              v-for="c in canoas" :key="c.id"
-              class="canoa-card"
-              :class="{ active: localForm.canoa === c.id, disabled: !c.disponible }"
-              :disabled="!c.disponible"
-              @click="localForm.canoa = c.id"
-              type="button"
-            >
-              <div class="canoa-top">
-                <span class="canoa-icon">{{ c.tipo.includes('Kayak') ? '🚣' : '⛵' }}</span>
-                <span v-if="localForm.canoa === c.id" class="canoa-check">✓</span>
-                <span v-else-if="!c.disponible" class="canoa-na">–</span>
-              </div>
-              <span class="canoa-nombre">{{ c.nombre }}</span>
-              <span class="canoa-meta">{{ c.capacidad }} pers.</span>
-            </button>
+      <div v-if="dia && !dia.dentroDeVentana" class="notice">
+        Las reservas se abren con hasta {{ dia.diasAnticipacion }} días de anticipación.
+        Vuelve más cerca de la fecha para crear una salida este día.
+      </div>
+
+      <template v-if="puedeCrear">
+        <div class="section-split">
+          <span>Nueva salida</span>
+        </div>
+
+        <!-- ② Hora -->
+        <div class="field-block">
+          <label class="field-label">Hora de salida</label>
+          <div class="select-wrapper">
+            <select v-model="localForm.hora" class="field-select">
+              <option value="" disabled>Selecciona una hora</option>
+              <option v-for="t in availableTimes" :key="t.value" :value="t.value" :disabled="t.disabled">
+                {{ t.label }}
+              </option>
+            </select>
+            <svg class="select-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div v-if="showFade" class="canoa-fade"></div>
-        </div>
-      </div>
 
-      <!-- ④ Equipamiento -->
-      <div class="field-block">
-        <label class="field-label">Equipamiento</label>
+          <!-- Timeline colapsable -->
+          <button class="timeline-toggle" @click="showTimeline = !showTimeline" type="button">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Ver disponibilidad del día
+            <svg class="chevron" :class="{ open: showTimeline }" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
+          <Transition name="expand">
+            <div v-if="showTimeline" class="timeline-inline">
+              <div
+                v-for="t in availableTimes" :key="t.value"
+                class="tl-row"
+                :class="{ 'tl-selected': localForm.hora === t.value, 'tl-full': t.disabled }"
+                @click="selectHour(t)"
+              >
+                <span class="tl-time">{{ t.value }}</span>
+                <div class="tl-bar-wrap">
+                  <div class="tl-bar" :class="{ active: salidasPorHora(t.value).length > 0 || localForm.hora === t.value }"></div>
+                </div>
+                <span class="tl-status">
+                  <template v-if="salidasPorHora(t.value).length">
+                    <span v-for="s in salidasPorHora(t.value)" :key="s.id" class="tl-pill" :class="s.cuposLibres <= 0 ? 'pill-full' : 'pill-ok'">
+                      {{ s.tipoCanoa }} · {{ s.cuposLibres <= 0 ? 'completa' : s.cuposLibres + ' cupo' + (s.cuposLibres !== 1 ? 's' : '') }}
+                    </span>
+                  </template>
+                  <span v-else-if="t.pasada" class="tl-free">Ya pasó</span>
+                  <span v-else class="tl-free">Libre</span>
+                </span>
+                <span v-if="localForm.hora === t.value" class="tl-mine">✓</span>
+              </div>
+            </div>
+          </Transition>
+        </div>
+
+        <!-- ③ Duración -->
+        <div class="field-block">
+          <label class="field-label">Duración</label>
+          <div class="pill-row">
+            <button
+              v-for="d in duraciones" :key="d.value"
+              class="dur-pill" :class="{ active: localForm.duracion === d.value }"
+              @click="localForm.duracion = d.value" type="button"
+            >{{ d.label }}</button>
+          </div>
+        </div>
+
+        <!-- ④ Embarcación -->
+        <div class="field-block">
+          <label class="field-label">Embarcación</label>
+
+          <p v-if="!localForm.hora" class="empty-note">Elige una hora para ver las canoas libres en ese horario.</p>
+          <div v-else-if="cargandoCanoas" class="canoa-scroll">
+            <div v-for="i in 3" :key="i" class="canoa-card canoa-card--skeleton"></div>
+          </div>
+          <p v-else-if="!canoas.length" class="empty-note">No quedan canoas libres en ese horario. Prueba otra hora.</p>
+
+          <div v-else class="canoa-scroll-wrap">
+            <div class="canoa-scroll" ref="canoeScroll" @scroll="onCanoeScroll">
+              <button
+                v-for="c in canoas" :key="c.id"
+                class="canoa-card"
+                :class="{ active: localForm.canoa === c.id }"
+                @click="localForm.canoa = c.id"
+                type="button"
+              >
+                <div class="canoa-top">
+                  <span class="canoa-icon">{{ c.capacidadMax > 1 ? '🛶' : '🚣' }}</span>
+                  <span v-if="localForm.canoa === c.id" class="canoa-check">✓</span>
+                </div>
+                <span class="canoa-nombre">{{ c.nombre || c.codigo }}</span>
+                <span class="canoa-meta">{{ c.tipo }} · {{ c.capacidadMax }} pers.</span>
+              </button>
+            </div>
+            <div v-if="showFade" class="canoa-fade"></div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ⑤ Equipamiento (aplica al crear y al unirse) -->
+      <div v-if="dia && dia.requisitos.puedeReservar" class="field-block">
+        <label class="field-label">Tu equipamiento</label>
         <div class="equip-list">
           <div class="equip-row">
             <div class="equip-left">
@@ -120,9 +199,11 @@
             </div>
             <div class="equip-right">
               <span class="equip-toggle-label">Propio</span>
-              <div class="toggle-track" :class="{ on: localForm.chalecoPropio }" @click="localForm.chalecoPropio = !localForm.chalecoPropio">
-                <div class="toggle-thumb"></div>
-              </div>
+              <button type="button" class="toggle-track" :class="{ on: localForm.chalecoPropio }"
+                      role="switch" :aria-checked="localForm.chalecoPropio" aria-label="Chaleco propio"
+                      @click="localForm.chalecoPropio = !localForm.chalecoPropio">
+                <span class="toggle-thumb"></span>
+              </button>
             </div>
           </div>
           <div class="equip-row">
@@ -132,23 +213,27 @@
             </div>
             <div class="equip-right">
               <span class="equip-toggle-label">Propio</span>
-              <div class="toggle-track" :class="{ on: localForm.remoPropio }" @click="localForm.remoPropio = !localForm.remoPropio">
-                <div class="toggle-thumb"></div>
-              </div>
+              <button type="button" class="toggle-track" :class="{ on: localForm.remoPropio }"
+                      role="switch" :aria-checked="localForm.remoPropio" aria-label="Remo propio"
+                      @click="localForm.remoPropio = !localForm.remoPropio">
+                <span class="toggle-thumb"></span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ⑤ Nota -->
-      <div class="field-block">
-        <label class="field-label">
+      <!-- ⑥ Nota -->
+      <div v-if="puedeCrear" class="field-block">
+        <label class="field-label" for="nota-salida">
           Nota <span class="optional">opcional</span>
         </label>
         <textarea
+          id="nota-salida"
           v-model="localForm.nota"
           class="field-textarea"
           rows="2"
+          maxlength="500"
           placeholder="Ej: Salida en grupo, aguas tranquilas..."
         ></textarea>
       </div>
@@ -156,9 +241,9 @@
     </div>
 
     <!-- Footer fijo con CTA -->
-    <div class="form-footer">
-      <button class="submit-btn" :disabled="!isFormValid" @click="handleSubmit" type="button">
-        Confirmar reserva
+    <div v-if="puedeCrear" class="form-footer">
+      <button class="submit-btn" :disabled="!isFormValid || enviando" @click="handleSubmit" type="button">
+        {{ enviando ? 'Reservando…' : 'Confirmar reserva' }}
       </button>
     </div>
 
@@ -166,7 +251,14 @@
 </template>
 
 <script>
-import { defineComponent, reactive, computed, watch, ref } from 'vue'
+import { defineComponent, reactive, computed, watch, ref, onMounted } from 'vue'
+import { useStore } from 'vuex'
+import salidaService from '@/services/salida.service'
+import clubService   from '@/services/club.service'
+import { useToast }  from '@/utils/useToast'
+import { mensajeError, limpiarMensaje } from '@/utils/apiError'
+
+const pad = (n) => String(n).padStart(2, '0')
 
 export default defineComponent({
   name: 'BookingFormPanel',
@@ -178,31 +270,26 @@ export default defineComponent({
     },
   },
 
-  emits: ['go-back', 'submit'],
+  emits: ['go-back', 'cambio'],
 
   setup(props, { emit }) {
-    const showTimeline = ref(false)
-    const showFade     = ref(true)
-    const canoeScroll  = ref(null)
+    const store = useStore()
+    const { mostrarToast } = useToast()
+
+    const showTimeline  = ref(false)
+    const showFade      = ref(true)
+    const canoeScroll   = ref(null)
+    const dia           = ref(null)
+    const cargandoDia   = ref(false)
+    const canoas        = ref([])
+    const cargandoCanoas = ref(false)
+    const enviando      = ref(false)
+    const accionEnCurso = ref(null)
 
     const onCanoeScroll = (e) => {
       const el = e.target
       showFade.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 4
     }
-
-    const times = []
-    for (let h = 8; h <= 19; h++) {
-      times.push(`${String(h).padStart(2, '0')}:00`)
-      if (h < 19) times.push(`${String(h).padStart(2, '0')}:30`)
-    }
-
-    const canoas = [
-      { id: 'k1', nombre: 'Kayak Azul #1',  tipo: 'Kayak individual', capacidad: 1, disponible: true  },
-      { id: 'k2', nombre: 'Kayak Azul #2',  tipo: 'Kayak individual', capacidad: 1, disponible: true  },
-      { id: 'c1', nombre: 'Canoa Roja #1',  tipo: 'Canoa doble',      capacidad: 2, disponible: true  },
-      { id: 'c2', nombre: 'Canoa Roja #2',  tipo: 'Canoa doble',      capacidad: 2, disponible: false },
-      { id: 'c3', nombre: 'Canoa Verde #3', tipo: 'Canoa grupal',     capacidad: 4, disponible: true  },
-    ]
 
     const duraciones = [
       { value: '30',  label: '30 min'  },
@@ -211,21 +298,14 @@ export default defineComponent({
       { value: '120', label: '2 horas' },
     ]
 
-    const localForm = reactive({
-      hora: '', duracion: '60', canoa: '',
-      chalecoPropio: false, remoPropio: false, nota: '',
+    // Equipamiento propio por defecto según el perfil del remador
+    const usuario = computed(() => store.getters['auth/currentUser'])
+    const formVacio = () => ({
+      hora: '', duracion: '60', canoa: null, nota: '',
+      chalecoPropio: !!usuario.value?.tieneSalvavidasPropio,
+      remoPropio:    !!usuario.value?.tieneRemoPropio,
     })
-
-    const resetForm = () =>
-      Object.assign(localForm, {
-        hora: '', duracion: '60', canoa: '',
-        chalecoPropio: false, remoPropio: false, nota: '',
-      })
-
-    watch(() => props.selectedDay?.date, () => {
-      resetForm()
-      showTimeline.value = false
-    })
+    const localForm = reactive(formVacio())
 
     const dateLabel = computed(() => {
       if (!props.selectedDay) return ''
@@ -233,39 +313,146 @@ export default defineComponent({
       return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
     })
 
-    const salidasPorTime = (time) =>
-      (props.selectedDay?.salidas || []).filter(s => s.hora === time)
+    const salidasDia = computed(() => dia.value?.salidas ?? [])
+    const puedeCrear = computed(() => !!dia.value?.requisitos.puedeReservar && !!dia.value?.dentroDeVentana)
 
-    const isTimeFull = (time) => {
-      const sal = salidasPorTime(time)
-      return sal.length > 0 && sal.every(s => s.cupos === 0)
+    const hora = (iso) => new Date(iso).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+    const esFutura = (s) => new Date(s.fechaHoraProgramada) > new Date()
+    const puedeUnirse = (s) =>
+      !s.soyParticipante && s.cuposLibres > 0 && esFutura(s) &&
+      ['Reservada', 'Confirmada'].includes(s.estado) && !!dia.value?.requisitos.puedeReservar
+
+    // ── Horas ─────────────────────────────────────────
+    const availableTimes = computed(() => {
+      const ahora = new Date()
+      const lista = []
+      for (let h = 7; h <= 19; h++) {
+        for (const m of [0, 30]) {
+          if (h === 19 && m === 30) continue
+          const value = `${pad(h)}:${pad(m)}`
+          const pasada = new Date(`${props.selectedDay?.date}T${value}:00`) <= ahora
+          lista.push({ value, pasada, disabled: pasada, label: pasada ? `${value} — ya pasó` : value })
+        }
+      }
+      return lista
+    })
+
+    const salidasPorHora = (value) => salidasDia.value.filter(s => hora(s.fechaHoraProgramada) === value)
+
+    const selectHour = (t) => { if (!t.disabled) localForm.hora = t.value }
+
+    const isFormValid = computed(() => puedeCrear.value && localForm.hora !== '' && localForm.canoa !== null)
+
+    // ── Carga de datos ────────────────────────────────
+    const cargarDia = async () => {
+      if (!props.selectedDay) return
+      cargandoDia.value = true
+      try {
+        const res = await salidaService.getDia(props.selectedDay.date)
+        dia.value = res.data.data
+      } catch (e) {
+        mostrarToast(mensajeError(e, 'No se pudo cargar la agenda del día.'), 'error', 5000)
+      } finally {
+        cargandoDia.value = false
+      }
     }
 
-    const availableTimes = computed(() =>
-      times.map(t => ({
-        value: t,
-        label: isTimeFull(t) ? `${t} — Sin cupos` : t,
-        disabled: isTimeFull(t),
-      }))
-    )
-
-    const isFormValid = computed(() => localForm.hora !== '' && localForm.canoa !== '')
-
-    const selectHour = (time) => {
-      if (!isTimeFull(time)) localForm.hora = time
+    const cargarCanoas = async () => {
+      canoas.value = []
+      if (!localForm.hora || !puedeCrear.value) return
+      cargandoCanoas.value = true
+      try {
+        const res = await clubService.canoasDisponibles(
+          `${props.selectedDay.date}T${localForm.hora}:00`, Number(localForm.duracion))
+        canoas.value = res.data.data ?? []
+        if (!canoas.value.some(c => c.id === localForm.canoa)) localForm.canoa = null
+      } catch (e) {
+        mostrarToast(limpiarMensaje(mensajeError(e, 'No se pudieron cargar las canoas.')), 'error', 5000)
+      } finally {
+        cargandoCanoas.value = false
+      }
     }
 
-    const handleSubmit = () => {
-      if (!isFormValid.value) return
-      emit('submit', { ...localForm, date: props.selectedDay?.date })
-      resetForm()
+    watch(() => [localForm.hora, localForm.duracion], cargarCanoas)
+
+    watch(() => props.selectedDay?.date, () => {
+      Object.assign(localForm, formVacio())
+      showTimeline.value = false
+      cargarDia()
+    })
+
+    onMounted(cargarDia)
+
+    // ── Acciones ──────────────────────────────────────
+    const equipamiento = () => ({
+      usaRemoClub:       !localForm.remoPropio,
+      usaSalvavidasClub: !localForm.chalecoPropio,
+    })
+
+    const handleSubmit = async () => {
+      if (!isFormValid.value || enviando.value) return
+      enviando.value = true
+      try {
+        await salidaService.crearReserva({
+          idCanoa:             localForm.canoa,
+          fechaHoraProgramada: `${props.selectedDay.date}T${localForm.hora}:00`,
+          duracionEstimadaMin: Number(localForm.duracion),
+          esEntrenamiento:     false,
+          observaciones:       localForm.nota.trim() || null,
+          ...equipamiento(),
+        })
+        mostrarToast(`Reserva confirmada para las ${localForm.hora}.`, 'success', 4000)
+        Object.assign(localForm, formVacio())
+        canoas.value = []
+        await cargarDia()
+        emit('cambio')
+      } catch (e) {
+        mostrarToast(limpiarMensaje(mensajeError(e, 'No se pudo crear la reserva.')), 'error', 6000)
+        cargarCanoas() // la canoa pudo haber sido tomada por otra persona
+      } finally {
+        enviando.value = false
+      }
+    }
+
+    const unirse = async (s) => {
+      accionEnCurso.value = s.id
+      try {
+        await salidaService.agregarParticipante(s.id, {
+          idRemador: store.getters['auth/idRemador'],
+          ...equipamiento(),
+        })
+        mostrarToast(`Te uniste a la salida de las ${hora(s.fechaHoraProgramada)}.`, 'success', 4000)
+        await cargarDia()
+        emit('cambio')
+      } catch (e) {
+        mostrarToast(limpiarMensaje(mensajeError(e, 'No se pudo unir a la salida.')), 'error', 6000)
+      } finally {
+        accionEnCurso.value = null
+      }
+    }
+
+    const salir = async (s) => {
+      accionEnCurso.value = s.id
+      try {
+        await salidaService.quitarParticipante(s.id, store.getters['auth/idRemador'])
+        mostrarToast('Saliste de la salida.', 'info', 3500)
+        await cargarDia()
+        emit('cambio')
+      } catch (e) {
+        mostrarToast(limpiarMensaje(mensajeError(e, 'No se pudo salir de la salida.')), 'error', 6000)
+      } finally {
+        accionEnCurso.value = null
+      }
     }
 
     return {
       showTimeline, showFade, canoeScroll, onCanoeScroll,
-      times, canoas, duraciones, localForm, dateLabel,
-      salidasPorTime, isTimeFull, availableTimes, isFormValid,
-      selectHour, handleSubmit,
+      duraciones, localForm, dateLabel,
+      dia, cargandoDia, salidasDia, puedeCrear,
+      canoas, cargandoCanoas, enviando, accionEnCurso,
+      hora, esFutura, puedeUnirse,
+      availableTimes, salidasPorHora, selectHour, isFormValid,
+      handleSubmit, unirse, salir,
     }
   },
 })
@@ -733,4 +920,148 @@ export default defineComponent({
 .submit-btn:hover:not(:disabled)  { opacity: 0.9; transform: translateY(-1px); }
 .submit-btn:active:not(:disabled) { transform: translateY(0); }
 .submit-btn:disabled              { opacity: 0.3; cursor: not-allowed; }
+</style>
+<style scoped>
+/* ── Elementos de la agenda del día (Fase 2) ───────── */
+.toggle-track { border: none; padding: 0; }
+.toggle-track:focus-visible,
+.btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.notice {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  background: var(--surface-bg, #ffffff);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #64748b);
+}
+.notice--warn {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.07);
+}
+.notice__title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 4px;
+}
+.notice__list { padding-left: 18px; color: var(--text-primary, #0f172a); }
+.notice__hint { margin-top: 6px; font-size: 0.74rem; }
+
+.empty-note {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  padding: 10px 0;
+}
+
+.section-split {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.section-split::after {
+  content: '';
+  flex: 1;
+  height: 0.5px;
+  background: var(--surface-border, #e2e8f0);
+}
+
+/* Lista de salidas del día */
+.day-list { display: flex; flex-direction: column; gap: 8px; }
+
+.day-item {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface-bg, #ffffff);
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  border-radius: 10px;
+}
+.day-item--mine { border-color: rgba(56, 189, 248, 0.45); box-shadow: inset 3px 0 0 var(--cyan); }
+.day-item--skeleton { height: 74px; animation: pulso 1.2s ease-in-out infinite; }
+
+.day-item__time { display: flex; flex-direction: column; align-items: center; }
+.day-item__hora {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+.day-item__dur { font-size: 0.66rem; color: var(--text-secondary, #64748b); }
+
+.day-item__info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.day-item__title {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--text-primary, #0f172a);
+}
+.day-item__meta { font-size: 0.72rem; color: var(--text-secondary, #64748b); }
+
+.chip {
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+.chip--estado { background: var(--green-dim); color: var(--green); }
+
+.seats { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+.seat { width: 12px; height: 12px; border-radius: 3px; }
+.seat--taken { background: var(--cyan); }
+.seat--open  { border: 1px solid var(--surface-border, #cbd5e1); }
+.seats__label { margin-left: 6px; font-size: 0.7rem; font-weight: 600; color: var(--green); }
+.seats__label--full { color: var(--red); }
+
+.day-item__actions { display: flex; align-items: center; gap: 6px; }
+
+.btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 0.5px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.btn:disabled { opacity: 0.5; cursor: wait; }
+.btn--primary { background: var(--cyan); color: #0f1117; }
+.btn--primary:hover:not(:disabled) { opacity: 0.88; }
+.btn--ghost {
+  background: transparent;
+  border-color: var(--surface-border, #e2e8f0);
+  color: var(--text-secondary, #64748b);
+}
+.btn--ghost:hover:not(:disabled) { color: var(--red); border-color: var(--red); }
+.btn--link { background: transparent; color: var(--text-secondary, #64748b); padding: 7px 6px; }
+.btn--link:hover { color: var(--cyan); }
+
+.canoa-card--skeleton { min-height: 96px; animation: pulso 1.2s ease-in-out infinite; }
+
+@keyframes pulso {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.8; }
+}
+
+@media (max-width: 600px) {
+  .day-item { grid-template-columns: 48px 1fr; }
+  .day-item__actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
 </style>

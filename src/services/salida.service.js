@@ -24,6 +24,11 @@ const salidaService = {
     return axios.get(`/Salidas/${id}`)
   },
 
+  // GET /api/Salidas/dia?fecha=YYYY-MM-DD → { salidas, requisitos, dentroDeVentana }
+  getDia(fecha) {
+    return axios.get('/Salidas/dia', { params: { fecha } })
+  },
+
   // POST /api/Salidas
   crearReserva(dto) {
     return axios.post('/Salidas', dto)
@@ -32,6 +37,11 @@ const salidaService = {
   // POST /api/Salidas/:id/participantes
   agregarParticipante(id, dto) {
     return axios.post(`/Salidas/${id}/participantes`, dto)
+  },
+
+  // DELETE /api/Salidas/:id/participantes/:idRemador
+  quitarParticipante(id, idRemador) {
+    return axios.delete(`/Salidas/${id}/participantes/${idRemador}`)
   },
 
   // POST /api/Salidas/:id/iniciar

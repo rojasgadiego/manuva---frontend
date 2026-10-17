@@ -6,7 +6,7 @@
       <section class="greet">
         <div class="greet__left">
           <p class="greet__date">{{ fechaHoy }}</p>
-          <h1 class="greet__name">Buenos días, {{ nombreCorto }}</h1>
+          <h1 class="greet__name">{{ saludo }}{{ nombreCorto ? `, ${nombreCorto}` : '' }}</h1>
           <p class="greet__club">Club de Canotaje Manuva'a</p>
         </div>
         <div class="greet__right">
@@ -15,9 +15,10 @@
             <span class="streak__lbl">salidas<br>este mes</span>
           </div>
           <div class="avatar">
-            <img v-if="usuario?.remador?.fotoUrl" :src="usuario.remador.fotoUrl" class="avatar__img" />
+            <img v-if="panel?.fotoUrl" :src="panel.fotoUrl" class="avatar__img" alt="" />
             <div v-else class="avatar__initials">{{ iniciales }}</div>
-            <span class="avatar__dot" :class="usuario?.activo ? 'dot--on' : 'dot--off'"></span>
+            <span class="avatar__dot" :class="puedeReservar ? 'dot--on' : 'dot--off'"
+                  :title="puedeReservar ? 'Habilitado para reservar' : 'Con requisitos pendientes'"></span>
           </div>
         </div>
       </section>
@@ -25,7 +26,7 @@
       <!-- ── Stats personales ── -->
       <section class="section">
         <h2 class="section__title">Mi actividad</h2>
-        <div class="stats-row">
+        <div class="stats-row" :class="{ 'is-loading': cargando }">
           <div class="stat stat--cyan">
             <div class="stat__accent"></div>
             <div class="stat__body">
@@ -42,14 +43,12 @@
               <span class="stat__sub">temporada {{ anioActual }}</span>
             </div>
           </div>
-          <div class="stat" :class="certVencePronto ? 'stat--amber' : 'stat--green'">
+          <div class="stat" :class="cert.estado === 'ok' ? 'stat--green' : 'stat--amber'">
             <div class="stat__accent"></div>
             <div class="stat__body">
               <span class="stat__label">Cert. médica</span>
-              <span class="stat__value stat__value--sm">{{ stats.certMedica }}</span>
-              <span class="stat__sub" :class="certVencePronto ? 'sub--warn' : ''">
-                {{ certVencePronto ? 'vence pronto' : 'al día' }}
-              </span>
+              <span class="stat__value stat__value--sm">{{ cargando ? '—' : cert.texto }}</span>
+              <span class="stat__sub" :class="cert.estado !== 'ok' ? 'sub--warn' : ''">{{ cargando ? '' : cert.sub }}</span>
             </div>
           </div>
           <div class="stat stat--green">
@@ -63,11 +62,28 @@
         </div>
       </section>
 
-      <!-- ── Próxima salida ── -->
-      <section class="section" v-if="proximasSalidas.length">
-        <h2 class="section__title">Mis próximas salidas</h2>
-        <div class="next-cards-row">
-          <div class="next-card" v-for="(s, i) in proximasSalidas" :key="i">
+      <!-- ── Avisos personales ── -->
+      <section class="section" v-if="avisos.length">
+        <h2 class="section__title">Avisos</h2>
+        <div class="avisos-list">
+          <div v-for="a in avisos" :key="a.id" class="aviso">
+            <div class="aviso__dot" :class="`aviso__dot--${a.tipo}`"></div>
+            <div class="aviso__content">
+              <p class="aviso__text">{{ a.mensaje }}</p>
+              <p class="aviso__meta">{{ a.meta }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Próximas salidas ── -->
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">Mis próximas salidas</h2>
+          <button class="section__action" @click="irAgenda">Reservar</button>
+        </div>
+        <div v-if="proximasSalidas.length" class="next-cards-row">
+          <div class="next-card" v-for="s in proximasSalidas" :key="s.id">
             <div class="next-card__accent"></div>
             <div class="next-card__body">
               <div class="next-card__date-box">
@@ -75,16 +91,20 @@
                 <span class="date-box__month">{{ s.mes }}</span>
               </div>
               <div class="next-card__info">
-                <p class="next-card__title">{{ s.embarcacion }} · {{ s.hora }}</p>
-                <p class="next-card__meta">{{ s.duracion }} · {{ s.equipo }}</p>
+                <p class="next-card__title">{{ s.nombreCanoa || s.codigoCanoa }} · {{ s.hora }} h</p>
+                <p class="next-card__meta">{{ s.duracionMin }} min · {{ s.tipoCanoa }} · {{ s.estado }}</p>
                 <p class="next-card__meta">
-                  Patrón: {{ s.patron }} ·
-                  <span class="meta__confirmados">{{ s.confirmados }}/{{ s.capacidad }} confirmados</span>
+                  {{ s.soyResponsable ? 'Eres responsable' : `Responsable: ${s.responsable}` }} ·
+                  <span class="meta__confirmados">{{ s.participantes }}/{{ s.capacidadMax }} inscritos</span>
                 </p>
               </div>
-              <button class="next-card__cancel" @click="cancelarSalida(i)">Cancelar</button>
+              <button class="next-card__cancel next-card__ver" @click="verSalida(s)">Ver</button>
             </div>
           </div>
+        </div>
+        <div v-else-if="!cargando" class="salidas-empty">
+          No tienes salidas próximas.
+          <button v-if="puedeReservar" class="link-btn" @click="irAgenda">Reserva una en la agenda →</button>
         </div>
       </section>
 
@@ -170,50 +190,42 @@
         </div>
       </section>
 
-      <!-- ── Salidas V6 con cupos ── -->
+
+      <!-- ── Salidas con cupos ── -->
       <section class="section">
         <div class="section__head">
-          <h2 class="section__title">Salidas V6 con cupos disponibles</h2>
+          <h2 class="section__title">Salidas con cupos disponibles</h2>
           <button class="section__action" @click="irAgenda">Ver agenda</button>
         </div>
         <div class="salidas-list">
           <div
-            v-for="s in salidasV6"
+            v-for="s in salidasConCupos"
             :key="s.id"
             class="salida-row"
           >
             <div class="salida-row__time">{{ s.hora }}</div>
             <div class="salida-row__date">{{ s.fecha }}</div>
-            <div class="salida-row__seats">
+            <div class="salida-row__seats" :aria-label="`${s.participantes} de ${s.capacidadMax} cupos ocupados`">
               <div
-                v-for="i in s.capacidad" :key="i"
+                v-for="i in s.capacidadMax" :key="i"
                 class="seat"
-                :class="i <= s.ocupados ? 'seat--taken' : 'seat--open'"
+                :class="i <= s.participantes ? 'seat--taken' : 'seat--open'"
               ></div>
             </div>
-            <span class="salida-row__badge" :class="s.libres <= 2 ? 'badge--warn' : 'badge--ok'">
-              {{ s.libres }} cupo{{ s.libres !== 1 ? 's' : '' }}
+            <span class="salida-row__badge" :class="s.cuposLibres <= 2 ? 'badge--warn' : 'badge--ok'">
+              {{ s.cuposLibres }} cupo{{ s.cuposLibres !== 1 ? 's' : '' }}
             </span>
-            <span class="salida-row__patron">{{ s.patron }}</span>
-            <button class="salida-row__btn" @click="unirseASalida(s)">Unirse</button>
+            <span class="salida-row__patron">{{ s.tipoCanoa }} · {{ s.responsable }}</span>
+            <button
+              v-if="puedeReservar"
+              class="salida-row__btn" :disabled="uniendo === s.id"
+              @click="unirseASalida(s)"
+            >{{ uniendo === s.id ? 'Uniendo…' : 'Unirse' }}</button>
+            <button v-else class="salida-row__btn" @click="verSalida(s)">Ver</button>
           </div>
 
-          <div v-if="salidasV6.length === 0" class="salidas-empty">
-            No hay salidas V6 con cupos disponibles en los próximos días.
-          </div>
-        </div>
-      </section>
-
-      <!-- ── Avisos del club ── -->
-      <section class="section">
-        <h2 class="section__title">Avisos del club</h2>
-        <div class="avisos-list">
-          <div v-for="a in avisos" :key="a.id" class="aviso">
-            <div class="aviso__dot" :class="`aviso__dot--${a.tipo}`"></div>
-            <div class="aviso__content">
-              <p class="aviso__text">{{ a.mensaje }}</p>
-              <p class="aviso__meta">{{ a.tiempo }} · {{ a.autor }}</p>
-            </div>
+          <div v-if="!cargando && salidasConCupos.length === 0" class="salidas-empty">
+            No hay salidas con cupos en los próximos días.
           </div>
         </div>
       </section>
@@ -223,9 +235,16 @@
 </template>
 
 <script>
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
 import AppLayout from '@/components/Layout/AppLayout.vue'
+import clubService from '@/services/club.service'
+import salidaService from '@/services/salida.service'
+import { useToast } from '@/utils/useToast'
+import { mensajeError, limpiarMensaje } from '@/utils/apiError'
+
+const DIAS_AVISO_CERT = 60
 
 export default defineComponent({
   name: 'HomeDashboard',
@@ -233,85 +252,129 @@ export default defineComponent({
 
   setup() {
     const router = useRouter()
+    const store  = useStore()
+    const { mostrarToast } = useToast()
 
-    // ── Usuario ────────────────────────────────────
-    const usuario = ref({
-      username: 'jrodriguez',
-      activo: true,
-      remador: {
-        nombreCompleto: 'Juan Rodríguez',
-        fotoUrl: null,
-        certMedicaVence: '2025-12-01',
-      },
-    })
+    // ── Datos del panel (GET /api/Dashboard/me) ────
+    const panel    = ref(null)
+    const cargando = ref(true)
+    const uniendo  = ref(null)
 
-    const iniciales = computed(() => {
-      const n = usuario.value?.remador?.nombreCompleto ?? usuario.value?.username ?? ''
-      return n.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase()
-    })
+    const cargarPanel = async () => {
+      try {
+        const res = await clubService.dashboard()
+        panel.value = res.data.data
+      } catch (e) {
+        mostrarToast(mensajeError(e, 'No se pudo cargar tu panel.'), 'error', 5000)
+      } finally {
+        cargando.value = false
+      }
+    }
 
-    const nombreCorto = computed(() => {
-      const n = usuario.value?.remador?.nombreCompleto ?? usuario.value?.username ?? ''
-      return n.split(' ')[0]
+    const nombre = computed(() => panel.value?.nombre ?? store.getters['auth/currentUser']?.nombreCompleto ?? '')
+
+    const iniciales = computed(() =>
+      nombre.value.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase())
+
+    const nombreCorto = computed(() => nombre.value.split(' ')[0])
+
+    const saludo = computed(() => {
+      const h = new Date().getHours()
+      return h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches'
     })
 
     // ── Fecha ──────────────────────────────────────
     const anioActual = new Date().getFullYear()
 
-    const fechaHoy = computed(() => {
-      return new Date().toLocaleDateString('es-ES', {
-        weekday: 'long', day: 'numeric', month: 'long',
-      })
-    })
+    const fechaHoy = computed(() => new Date().toLocaleDateString('es-ES', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    }))
 
     // ── Stats ──────────────────────────────────────
-    const stats = ref({
-      salidasTotales: 84,
-      salidasMes:     3,
-      horasAgua:      126,
-      certMedica:     '12/2025',
-      rachaActual:    7,
+    const stats = computed(() => {
+      const e = panel.value?.estadisticas
+      return {
+        salidasTotales: e?.salidasTotales ?? '—',
+        salidasMes:     e?.salidasMes ?? 0,
+        horasAgua:      e?.horasTemporada ?? '—',
+        rachaActual:    e?.rachaSemanas ?? '—',
+      }
     })
 
-    const actividadMes = computed(() => stats.value.salidasMes)
+    const actividadMes = computed(() => panel.value?.estadisticas.salidasMes ?? 0)
 
-    const certVencePronto = computed(() => {
-      if (!usuario.value?.remador?.certMedicaVence) return false
-      const vence = new Date(usuario.value.remador.certMedicaVence)
-      const hoy   = new Date()
-      const diff  = (vence - hoy) / (1000 * 60 * 60 * 24)
-      return diff < 60
+    const diasHasta = (fechaIso) => Math.ceil((new Date(fechaIso + 'T00:00:00') - new Date().setHours(0, 0, 0, 0)) / 86400000)
+
+    // Estado del certificado médico: sin registro / vencido / vence pronto / al día
+    const cert = computed(() => {
+      const vence = panel.value?.certMedicaVence
+      if (!vence) return { texto: 'Sin registro', estado: 'vencido', sub: 'regulariza con el club' }
+      const dias = diasHasta(vence)
+      const [y, m] = vence.split('-')
+      const texto = `${m}/${y}`
+      if (dias < 0)                return { texto, estado: 'vencido', sub: 'vencido' }
+      if (dias <= DIAS_AVISO_CERT) return { texto, estado: 'pronto',  sub: `vence en ${dias} día${dias !== 1 ? 's' : ''}` }
+      return { texto, estado: 'ok', sub: 'al día' }
     })
 
-    // ── Próxima salida ─────────────────────────────
-    const proximasSalidas = ref([
-      {
-        dia:         '17',
-        mes:         'mar',
-        embarcacion: 'Canoa V6',
-        hora:        '08:00 h',
-        duracion:    '1 hora',
-        equipo:      'Remo propio',
-        patron:      'Carlos Vega',
-        confirmados: 4,
-        capacidad:   6,
-      },
-      {
-        dia:         '20',
-        mes:         'mar',
-        embarcacion: 'Canoa V1',
-        hora:        '10:00 h',
-        duracion:    '1 hora',
-        equipo:      'Remo propio',
-        patron:      'Carlos Vega',
-        confirmados: 4,
-        capacidad:   6,
-      },
-    ])
-
-    const cancelarSalida = (i) => {
-      console.log('Cancelar salida', i)
+    // ── Salidas ────────────────────────────────────
+    const formatoSalida = (s) => {
+      const d = new Date(s.fechaHoraProgramada)
+      const hoy = new Date()
+      const manana = new Date(); manana.setDate(hoy.getDate() + 1)
+      const mismoDia = (a, b) => a.toDateString() === b.toDateString()
+      return {
+        ...s,
+        dia:   String(d.getDate()),
+        mes:   d.toLocaleDateString('es-CL', { month: 'short' }).replace('.', ''),
+        hora:  d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        fecha: mismoDia(d, hoy) ? 'hoy' : mismoDia(d, manana) ? 'mañana'
+               : d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }),
+      }
     }
+
+    const proximasSalidas = computed(() => (panel.value?.proximasSalidas ?? []).map(formatoSalida))
+    const salidasConCupos = computed(() => (panel.value?.salidasConCupos ?? []).map(formatoSalida))
+    const puedeReservar   = computed(() => !!panel.value?.requisitos.puedeReservar)
+
+    const verSalida = (s) => router.push(`/salidas/${s.id}`)
+
+    const unirseASalida = async (s) => {
+      uniendo.value = s.id
+      try {
+        const user = store.getters['auth/currentUser']
+        await salidaService.agregarParticipante(s.id, {
+          idRemador: store.getters['auth/idRemador'],
+          usaRemoClub: !user?.tieneRemoPropio,
+          usaSalvavidasClub: !user?.tieneSalvavidasPropio,
+        })
+        mostrarToast(`Te uniste a la salida de ${s.fecha} a las ${s.hora}.`, 'success', 4000)
+        await cargarPanel()
+      } catch (e) {
+        mostrarToast(limpiarMensaje(mensajeError(e, 'No se pudo unir a la salida.')), 'error', 6000)
+      } finally {
+        uniendo.value = null
+      }
+    }
+
+    const irAgenda = () => router.push({ name: 'Agenda' })
+
+    // ── Avisos personales (derivados de tu estado en el club) ──
+    const avisos = computed(() => {
+      const p = panel.value
+      if (!p) return []
+      const lista = (p.requisitos.pendientes ?? []).map((m, i) => ({ id: `req-${i}`, tipo: 'amber', mensaje: m, meta: 'Requisito para reservar' }))
+      if (cert.value.estado === 'pronto')
+        lista.push({ id: 'cert', tipo: 'amber', mensaje: `Tu certificado médico ${cert.value.sub}. Renuévalo para seguir reservando.`, meta: 'Certificado médico' })
+      if (p.cuotasPendientes > 0)
+        lista.push({ id: 'cuotas', tipo: 'amber', mensaje: `Tienes ${p.cuotasPendientes} cuota${p.cuotasPendientes !== 1 ? 's' : ''} pendiente${p.cuotasPendientes !== 1 ? 's' : ''} de pago.`, meta: 'Membresía' })
+      if (p.membresia?.vigente) {
+        const dias = diasHasta(p.membresia.fechaFin)
+        if (dias <= 30)
+          lista.push({ id: 'memb', tipo: 'cyan', mensaje: `Tu membresía ${p.membresia.tipo.toLowerCase()} vence en ${dias} día${dias !== 1 ? 's' : ''}.`, meta: 'Membresía' })
+      }
+      return lista
+    })
 
     // ── Clima — Open-Meteo ─────────────────────────
     const COORDS = { lat: -29.95, lon: -71.34, ubicacion: 'Coquimbo, IV Región' }
@@ -422,59 +485,20 @@ export default defineComponent({
 
     const diaActual = computed(() => forecast.value[diaSeleccionado.value] ?? null)
 
-    // ── Salidas V6 con cupos ───────────────────────
-    const salidasV6 = ref([
-      { id: 1, hora: '08:00', fecha: 'hoy, 14 mar',  capacidad: 6, ocupados: 4, libres: 2, patron: 'C. Vega'   },
-      { id: 2, hora: '10:30', fecha: 'hoy, 14 mar',  capacidad: 6, ocupados: 2, libres: 4, patron: 'M. Torres' },
-      { id: 3, hora: '08:00', fecha: 'lun, 17 mar',  capacidad: 6, ocupados: 5, libres: 1, patron: 'R. Díaz'   },
-      { id: 4, hora: '09:00', fecha: 'mar, 18 mar',  capacidad: 6, ocupados: 3, libres: 3, patron: 'C. Vega'   },
-    ])
-
-    const unirseASalida = (salida) => {
-      console.log('Unirse a salida:', salida)
-      router.push({ name: 'agenda', query: { date: salida.fecha, hora: salida.hora } })
-    }
-
-    const irAgenda = () => {
-      router.push({ name: 'agenda' })
-    }
-
-    // ── Avisos ─────────────────────────────────────
-    const avisos = ref([
-      {
-        id: 1,
-        tipo:    'amber',
-        mensaje: 'Mantenimiento de embarcaciones el sábado 15. No habrá salidas entre 08:00 y 11:00 h.',
-        tiempo:  'Hace 2 horas',
-        autor:   'Administración',
-      },
-      {
-        id: 2,
-        tipo:    'cyan',
-        mensaje: 'Recordatorio: renovar certificado médico antes del 31 de marzo para habilitar reservas.',
-        tiempo:  'Ayer',
-        autor:   'Secretaría',
-      },
-      {
-        id: 3,
-        tipo:    'green',
-        mensaje: 'Nueva canoa V6 "Verde #4" disponible a partir del lunes 17.',
-        tiempo:  'Hace 3 días',
-        autor:   'Flota',
-      },
-    ])
+    onMounted(cargarPanel)
 
     return {
-      usuario, iniciales, nombreCorto, fechaHoy, anioActual,
-      stats, actividadMes, certVencePronto,
-      proximasSalidas, cancelarSalida,
+      panel, cargando, uniendo,
+      nombre, iniciales, nombreCorto, saludo, fechaHoy, anioActual,
+      stats, actividadMes, cert,
+      proximasSalidas, salidasConCupos, puedeReservar, verSalida, unirseASalida, irAgenda,
       forecast, diaSeleccionado, diaActual, climaCargando, climaError, cargarClima,
-      salidasV6, unirseASalida, irAgenda,
       avisos,
     }
   },
 })
 </script>
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
@@ -1117,4 +1141,27 @@ export default defineComponent({
   .salida-row           { flex-wrap: wrap; }
   .salida-row__patron   { display: none; }
 }
+</style>
+<style scoped>
+/* ── Fase 2: estados de carga y enlaces ── */
+.stats-row.is-loading .stat__value { opacity: 0.4; }
+
+.next-card__ver {
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+.link-btn {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #38bdf8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-btn:hover { text-decoration: underline; }
+
+.salida-row__btn:disabled { opacity: 0.5; cursor: wait; }
 </style>
