@@ -3,6 +3,7 @@
     <div class="calendar-card">
       <div class="calendar-header">
         <button class="nav-btn" @click="$emit('prev-month')">‹</button>
+
         <h2>{{ monthYearLabel }}</h2>
 
         <div class="header-right">
@@ -27,29 +28,27 @@
             { selected: isSelected(day.date) },
             { inactive: !day.currentMonth },
             { past:     day.isPast },
-            day.salidas.length ? getEstado(day.salidas) : 'empty'
+            day.tieneSalidas ? getEstado(day) : 'empty'
           ]"
           @click="!day.isPast && $emit('select-day', day)"
         >
           <div class="day-header">
             <span class="day-number">{{ day.day }}</span>
             <span
-              v-if="day.salidas.length"
-              class="status-dot"
-              :class="getEstado(day.salidas)"
-            ></span>
+              v-if="day.tieneSalidas"
+              class="day-badge"
+              :class="getEstado(day)"
+            >{{ day.totalSalidas }} sal.</span>
           </div>
 
-          <div v-if="day.salidas.length" class="day-summary">
-            <span class="salidas-count">{{ day.salidas.length }} salida{{ day.salidas.length > 1 ? 's' : '' }}</span>
-            <div class="ocupacion-bar">
-              <div
-                class="ocupacion-fill"
-                :class="getEstado(day.salidas)"
-                :style="{ width: getPorcentajeOcupacion(day.salidas) + '%' }"
-              ></div>
-            </div>
-            <span class="cupos-texto">{{ getCuposTotales(day.salidas) }} cupos libres</span>
+          <div v-if="day.tieneSalidas" class="day-cupos">
+            <template v-if="day.cuposDisponibles === 0">
+              <span class="full-tag">Sin cupos</span>
+            </template>
+            <template v-else>
+              <span class="cupos-num" :class="getEstado(day)">{{ day.cuposDisponibles }}</span>
+              <span class="cupos-label">cupos libres</span>
+            </template>
           </div>
         </div>
       </div>
@@ -76,27 +75,26 @@ export default defineComponent({
 
     const isSelected = (date) => props.selectedDate === date
 
-    const getCuposTotales = (salidas) =>
-      salidas.reduce((acc, s) => acc + (s.cupos ?? 0), 0)
-
-    const getCuposMaximos = (salidas) =>
-      salidas.reduce((acc, s) => acc + (s.cuposMax ?? 0), 0)
-
-    const getPorcentajeOcupacion = (salidas) => {
-      const max   = getCuposMaximos(salidas)
-      const libre = getCuposTotales(salidas)
+    const getPorcentajeOcupacion = (day) => {
+      const max = day.totalCupos ?? 0
       if (max === 0) return 100
-      return Math.min(100, Math.round(((max - libre) / max) * 100))
+      const ocupados = max - (day.cuposDisponibles ?? 0)
+      return Math.min(100, Math.round((ocupados / max) * 100))
     }
 
-    const getEstado = (salidas) => {
-      const pct = getPorcentajeOcupacion(salidas)
+    const getEstado = (day) => {
+      const pct = getPorcentajeOcupacion(day)
       if (pct >= 100) return 'full'
       if (pct >= 70)  return 'partial'
       return 'available'
     }
 
-    return { weekDays, isSelected, getCuposTotales, getPorcentajeOcupacion, getEstado }
+    return {
+      weekDays,
+      isSelected,
+      getPorcentajeOcupacion,
+      getEstado,
+    }
   },
 })
 </script>
@@ -104,14 +102,19 @@ export default defineComponent({
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
-/* ── Variables de estado (fijas en ambos temas) ── */
 .calendar-panel {
   --green:      #22c55e;
   --green-bg:   rgba(34, 197, 94, 0.08);
+  --green-border: rgba(34, 197, 94, 0.22);
+  --green-text: #16a34a;
   --yellow:     #f59e0b;
   --yellow-bg:  rgba(245, 158, 11, 0.08);
+  --yellow-border: rgba(245, 158, 11, 0.22);
+  --yellow-text: #b45309;
   --red:        #ef4444;
-  --red-bg:     rgba(239, 68, 68, 0.08);
+  --red-bg:     rgba(239, 68, 68, 0.07);
+  --red-border: rgba(239, 68, 68, 0.2);
+  --red-text:   #b91c1c;
   --cyan:       #38bdf8;
 
   position: absolute;
@@ -122,7 +125,6 @@ export default defineComponent({
   font-family: 'Inter', sans-serif;
 }
 
-/* ── Card — usa variables del tema padre ── */
 .calendar-card {
   background: var(--surface-bg, #141820);
   border: 0.5px solid var(--surface-border, #1e2433);
@@ -135,8 +137,8 @@ export default defineComponent({
   transition: background 0.25s ease, border-color 0.25s ease;
 }
 
-/* ── Header ── */
 .calendar-header {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -145,6 +147,9 @@ export default defineComponent({
 }
 
 .calendar-header h2 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
@@ -152,6 +157,8 @@ export default defineComponent({
   margin: 0;
   text-transform: capitalize;
   letter-spacing: -0.3px;
+  white-space: nowrap;
+  pointer-events: none;
   transition: color 0.25s ease;
 }
 
@@ -159,6 +166,7 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-left: auto;
 }
 
 .nav-btn {
@@ -180,7 +188,6 @@ export default defineComponent({
   border-color: var(--cyan);
 }
 
-/* ── Leyenda ── */
 .legend {
   display: flex;
   gap: 12px;
@@ -201,18 +208,17 @@ export default defineComponent({
   border-radius: 50%;
   flex-shrink: 0;
 }
-
 .legend-dot.available { background: var(--green); }
 .legend-dot.partial   { background: var(--yellow); }
 .legend-dot.full      { background: var(--red); }
 
-/* ── Grid ── */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, 1fr);
+  grid-template-rows: auto repeat(6, minmax(100px, 1fr));
   gap: 5px;
   flex: 1;
+  min-height: 0;
 }
 
 .calendar-day-name {
@@ -228,54 +234,59 @@ export default defineComponent({
 
 /* ── Día base ── */
 .calendar-day {
-  background: var(--surface-bg, #141820);
   border-radius: 8px;
-  padding: 7px 7px 6px;
+  padding: 9px 9px 8px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   border: 0.5px solid var(--surface-border, #1e2433);
-  border-bottom-width: 2px;
+  overflow: hidden;
 }
 
-/* ── Estados — borde inferior de color ── */
-.calendar-day.empty     { border-bottom-color: var(--surface-border, #1e2433); }
-.calendar-day.available { border-bottom-color: var(--green); }
-.calendar-day.partial   { border-bottom-color: var(--yellow); }
-.calendar-day.full      { border-bottom-color: var(--red); }
+.calendar-day.empty {
+  background: var(--surface-bg, #141820);
+  border-color: var(--surface-border, #1e2433);
+}
 
-/* ── Hover ── */
+.calendar-day.available {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+}
+
+.calendar-day.partial {
+  background: var(--yellow-bg);
+  border-color: var(--yellow-border);
+}
+
+.calendar-day.full {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+}
+
 .calendar-day:hover:not(.past):not(.inactive) {
-  background: rgba(56, 189, 248, 0.07);
-  border-color: rgba(56, 189, 248, 0.3);
-  border-bottom-color: var(--cyan);
+  border-color: rgba(56, 189, 248, 0.4);
   transform: translateY(-1px);
 }
 
-/* ── Hoy ── */
 .calendar-day.today {
-  border-color: var(--cyan) !important;
-  border-bottom-color: var(--cyan) !important;
-  background: rgba(56, 189, 248, 0.08) !important;
+  outline: 1.5px solid var(--cyan);
+  outline-offset: -1px;
 }
 
-/* ── Seleccionado ── */
 .calendar-day.selected {
   background: var(--cyan) !important;
   border-color: var(--cyan) !important;
+  outline: none !important;
 }
 
-.calendar-day.selected .day-number,
-.calendar-day.selected .salidas-count,
-.calendar-day.selected .cupos-texto { color: #0f1117; }
+.calendar-day.selected .day-number  { color: #0f1117; }
+.calendar-day.selected .day-badge   { background: rgba(15,17,23,0.15) !important; color: #0f1117 !important; }
+.calendar-day.selected .cupos-num   { color: #0f1117 !important; }
+.calendar-day.selected .cupos-label { color: rgba(15,17,23,0.6); }
+.calendar-day.selected .full-tag    { color: #0f1117; }
 
-.calendar-day.selected .ocupacion-bar  { background: rgba(15, 17, 23, 0.15); }
-.calendar-day.selected .ocupacion-fill { background: #0f1117 !important; }
-.calendar-day.selected .status-dot     { background: rgba(15, 17, 23, 0.5) !important; }
-
-/* ── Inactivo / pasado ── */
 .calendar-day.inactive { opacity: 0.2; pointer-events: none; }
 .calendar-day.past     { opacity: 0.25; cursor: not-allowed; }
 .calendar-day.past:hover { transform: none; }
@@ -289,61 +300,68 @@ export default defineComponent({
 
 .day-number {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.88rem;
   color: var(--text-primary, #e2e8f0);
   transition: color 0.25s ease;
 }
 
-.status-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%; flex-shrink: 0;
-}
-
-.status-dot.available { background: var(--green); }
-.status-dot.partial   { background: var(--yellow); }
-.status-dot.full      { background: var(--red); }
-
-/* ── Resumen del día ── */
-.day-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.salidas-count {
+.day-badge {
   font-size: 0.6rem;
   font-weight: 600;
-  color: var(--text-secondary, #64748b);
+  padding: 1px 5px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.day-badge.available { background: rgba(34,197,94,0.15);  color: var(--green-text); }
+.day-badge.partial   { background: rgba(245,158,11,0.15); color: var(--yellow-text); }
+.day-badge.full      { background: rgba(239,68,68,0.12);  color: var(--red-text); }
+
+/* ── Cupos ── */
+.day-cupos {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cupos-num {
   font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.ocupacion-bar {
-  height: 3px;
-  background: var(--surface-border, #1e2433);
-  border-radius: 3px;
-  overflow: hidden;
-}
+.cupos-num.available { color: var(--green-text); }
+.cupos-num.partial   { color: var(--yellow-text); }
+.cupos-num.full      { color: var(--red-text); }
 
-.ocupacion-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.ocupacion-fill.available { background: var(--green); }
-.ocupacion-fill.partial   { background: var(--yellow); }
-.ocupacion-fill.full      { background: var(--red); }
-
-.cupos-texto {
-  font-size: 0.58rem;
+.cupos-label {
+  font-size: 0.6rem;
   color: var(--text-secondary, #64748b);
 }
 
-/* ── Mobile ── */
+.full-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--red-text);
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .legend { display: none; }
+}
+
 @media (max-width: 600px) {
-  .calendar-day { padding: 6px 4px; border-radius: 6px; }
-  .day-header   { justify-content: center; }
-  .status-dot, .day-summary, .legend { display: none; }
+  .calendar-grid {
+    grid-template-rows: auto repeat(6, minmax(70px, 1fr));
+  }
+  .calendar-day   { padding: 6px 5px; border-radius: 6px; }
+  .day-header     { justify-content: center; }
+  .day-badge, .day-cupos { display: none; }
+
+  .calendar-header h2 { position: static; transform: none; }
+  .header-right { margin-left: 0; }
 }
 </style>

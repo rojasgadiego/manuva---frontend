@@ -1,7 +1,7 @@
 <template>
   <section id="planes" class="section bg-light" ref="sectionRef">
     <div class="container">
-      <h2 class="section-title" :class="{ 'animate-in': titleVisible }">Elige tu Duración</h2>
+      <h2 class="section-title" :class="{ 'animate-in': titleVisible }">Elige tu Plan</h2>
       <div class="plans-grid" :class="{ 'animate-in': gridVisible }" ref="gridRef">
         <div 
           v-for="(plan, index) in subscriptionPlans" 

@@ -41,41 +41,54 @@ export default defineComponent({
   components: { AppLayout, CalendarPanel, FormularioAgenda },
 
   setup() {
-    const view        = ref('calendar')
-    const selectedDay = ref(null)
+    const view         = ref('calendar')
+    const selectedDay  = ref(null)
     const currentMonth = ref(new Date())
-
-    // Salidas agrupadas por fecha: { 'YYYY-MM-DD': [{ hora, cupos }] }
     const salidasPorFecha = ref({})
-    const cargando = ref(false)
+    const cargando     = ref(false)
+    const cache        = {}
 
-    // ── Cargar salidas próximas desde la API ──────
+    // ── Helpers ───────────────────────────────────
+    const formatDate = (d) => {
+      const y   = d.getFullYear()
+      const m   = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    }
+
+    const getRango = () => {
+      const hoy    = new Date()
+      const fin    = new Date()
+      fin.setDate(hoy.getDate() + 14)
+
+      return {
+        fechaInicio: formatDate(hoy),
+        fechaFin:    formatDate(fin),
+      }
+    }
+
+    // ── Cargar resumen desde la API ───────────────
     const cargarSalidas = async () => {
       cargando.value = true
       try {
-        const response = await salidaService.getProximas()
-        const salidas = response.data?.data ?? []
+        const { fechaInicio, fechaFin } = getRango()
+        const response = await salidaService.getResumenRango(fechaInicio, fechaFin)
+        const dias     = response.data?.data ?? []
 
-        // Agrupar por fecha y transformar al formato del calendario
         const agrupadas = {}
-        salidas.forEach(s => {
-          const fecha = s.fechaHoraProgramada?.substring(0, 10)
+        dias.forEach(d => {
+          const fecha = d.fecha?.substring(0, 10)
           if (!fecha) return
-
-          const cuposLibres = s.capacidadMax - s.participantes
-
-          if (!agrupadas[fecha]) agrupadas[fecha] = []
-          agrupadas[fecha].push({
-            id:       s.id,
-            hora:     s.fechaHoraProgramada.substring(11, 16),
-            cupos:    cuposLibres,       // cupos disponibles
-            cuposMax: s.capacidadMax,    // capacidad total de la canoa
-          })
+          agrupadas[fecha] = {
+            totalSalidas:     d.totalSalidas,
+            totalCupos:       d.totalCupos,
+            cuposDisponibles: d.cuposDisponibles,
+          }
         })
 
         salidasPorFecha.value = agrupadas
       } catch (error) {
-        console.error('Error al cargar salidas:', error)
+        console.error('Error al cargar resumen:', error)
       } finally {
         cargando.value = false
       }
@@ -84,28 +97,26 @@ export default defineComponent({
     onMounted(cargarSalidas)
 
     // ── Calendario ────────────────────────────────
-    const formatDate = (d) => {
-      const y   = d.getFullYear()
-      const m   = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      return `${y}-${m}-${day}`
-    }
-
     const monthYearLabel = computed(() =>
       currentMonth.value.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
     )
 
     const buildDay = (date, currentMonthFlag) => {
-      const key   = formatDate(date)
-      const today = new Date(); today.setHours(0, 0, 0, 0)
-      const cmp   = new Date(date); cmp.setHours(0, 0, 0, 0)
+      const key     = formatDate(date)
+      const today   = new Date(); today.setHours(0, 0, 0, 0)
+      const cmp     = new Date(date); cmp.setHours(0, 0, 0, 0)
+      const resumen = salidasPorFecha.value[key] ?? null
+
       return {
-        date: key,
-        day: date.getDate(),
-        currentMonth: currentMonthFlag,
-        isToday: key === formatDate(new Date()),
-        isPast: cmp < today,
-        salidas: salidasPorFecha.value[key] ?? [],
+        date:             key,
+        day:              date.getDate(),
+        currentMonth:     currentMonthFlag,
+        isToday:          key === formatDate(new Date()),
+        isPast:           cmp < today,
+        totalSalidas:     resumen?.totalSalidas     ?? 0,
+        totalCupos:       resumen?.totalCupos       ?? 0,
+        cuposDisponibles: resumen?.cuposDisponibles ?? 0,
+        tieneSalidas:     (resumen?.totalSalidas    ?? 0) > 0,
       }
     }
 
@@ -129,6 +140,7 @@ export default defineComponent({
         currentMonth.value.getFullYear(),
         currentMonth.value.getMonth() - 1, 1
       )
+      cargarSalidas()
     }
 
     const nextMonth = () => {
@@ -136,6 +148,7 @@ export default defineComponent({
         currentMonth.value.getFullYear(),
         currentMonth.value.getMonth() + 1, 1
       )
+      cargarSalidas()
     }
 
     // ── Navegación ────────────────────────────────
@@ -150,14 +163,17 @@ export default defineComponent({
 
     const handleSubmit = async (payload) => {
       console.log('Nueva reserva:', payload)
-      await cargarSalidas() // recargar calendario tras crear reserva
+      // Invalidar cache del mes actual para reflejar la nueva reserva
+      const key = `${currentMonth.value.getFullYear()}-${currentMonth.value.getMonth()}`
+      delete cache[key]
+      await cargarSalidas()
       goBack()
     }
 
     return {
       view, selectedDay, goBack, selectDay, handleSubmit,
       calendarDays, monthYearLabel, prevMonth, nextMonth,
-      cargando
+      cargando,
     }
   },
 })

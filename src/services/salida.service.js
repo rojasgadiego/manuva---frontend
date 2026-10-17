@@ -6,6 +6,11 @@ const salidaService = {
     return axios.get('/Salidas/proximas')
   },
 
+  // GET /api/Salidas/historial-usuario?pagina=1&porPagina=20
+  getHistorialUsuario(pagina = 1, porPagina = 20) {
+    return axios.get('/Salidas/historial-usuario', { params: { pagina, porPagina } })
+  },
+
   // GET /api/Salidas/historial?desde=...&hasta=...
   getHistorial(desde = null, hasta = null) {
     const params = {}
@@ -42,7 +47,14 @@ const salidaService = {
   // POST /api/Salidas/:id/cancelar
   cancelar(id, dto) {
     return axios.post(`/Salidas/${id}/cancelar`, dto)
-  }
+  },
+
+  // GET /api/Salidas/resumen?fechaInicio=...&fechaFin=...
+  getResumenRango(fechaInicio, fechaFin) {
+    return axios.get('/Salidas/resumen', {
+      params: { fechaInicio, fechaFin }
+    })
+  },
 }
 
 export default salidaService

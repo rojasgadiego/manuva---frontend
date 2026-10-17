@@ -13,7 +13,7 @@
             <circle cx="33" cy="33" r="2.5" fill="#4ac9a0" opacity="0.7"/>
           </svg>
         </div>
-        <h1>Club Manuva'a</h1>
+        <h1>Club Canotaje</h1>
         <p>Área de Socios</p>
       </header>
 

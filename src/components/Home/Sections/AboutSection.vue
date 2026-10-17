@@ -13,7 +13,7 @@
         <!-- Lado izquierdo: texto -->
         <div class="about-text" :class="{ 'animate-in': isVisible }">
           <p class="lead">
-            Somos el <strong>Club Manuva'a</strong>, un club de canotaje nacido en la
+            Somos el <strong>Club Canotaje</strong>, un club de canotaje nacido en la
             Región de Coquimbo, unidos por el amor al mar, los ríos y el deporte en equipo.
           </p>
           <p>

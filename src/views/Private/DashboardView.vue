@@ -92,9 +92,27 @@
       <section class="section">
         <h2 class="section__title">Condiciones del día</h2>
 
-        <!-- Cargando -->
-        <div v-if="climaCargando" class="clima-estado">
-          <span class="clima-estado__text">Cargando condiciones...</span>
+        <!-- Skeleton de carga -->
+        <div v-if="climaCargando" class="weather-grid weather-skeleton">
+          <div class="days-card">
+            <div class="day-col" v-for="i in 6" :key="i">
+              <div class="sk sk--label"></div>
+              <div class="sk sk--day"></div>
+              <div class="sk sk--icon"></div>
+              <div class="sk-temps">
+                <div class="sk sk--temp"></div>
+                <div class="sk sk--temp-min"></div>
+              </div>
+            </div>
+          </div>
+          <div class="weather-cells">
+            <div class="wcell" v-for="i in 3" :key="i">
+              <div class="sk sk--cell-label"></div>
+              <div class="sk sk--cell-value"></div>
+              <div class="sk sk--cell-sub"></div>
+              <div v-if="i === 1" class="sk sk--cell-bar"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Error -->
@@ -103,7 +121,8 @@
           <button class="clima-estado__retry" @click="cargarClima">Reintentar</button>
         </div>
 
-        <div v-else-if="diaActual" class="weather-grid">
+        <!-- Datos cargados -->
+        <div v-else-if="diaActual" class="weather-grid weather-grid--loaded">
 
           <!-- Días seleccionables -->
           <div class="days-card">
@@ -148,7 +167,7 @@
             </div>
           </div>
 
-        </div><!-- end weather-grid / v-else-if -->
+        </div>
       </section>
 
       <!-- ── Salidas V6 con cupos ── -->
@@ -216,7 +235,6 @@ export default defineComponent({
     const router = useRouter()
 
     // ── Usuario ────────────────────────────────────
-    // En producción: store.getters['auth/usuario'] o similar
     const usuario = ref({
       username: 'jrodriguez',
       activo: true,
@@ -247,7 +265,6 @@ export default defineComponent({
     })
 
     // ── Stats ──────────────────────────────────────
-    // En producción: cargar desde store / API
     const stats = ref({
       salidasTotales: 84,
       salidasMes:     3,
@@ -267,7 +284,6 @@ export default defineComponent({
     })
 
     // ── Próxima salida ─────────────────────────────
-    // En producción: cargar desde store / API
     const proximasSalidas = ref([
       {
         dia:         '17',
@@ -294,12 +310,10 @@ export default defineComponent({
     ])
 
     const cancelarSalida = (i) => {
-      // dispatch store o llamada API
       console.log('Cancelar salida', i)
     }
 
     // ── Clima — Open-Meteo ─────────────────────────
-    // Coordenadas de la bahía del club (ajustar según ubicación real)
     const COORDS = { lat: -29.95, lon: -71.34, ubicacion: 'Coquimbo, IV Región' }
 
     const diaSeleccionado = ref(0)
@@ -307,7 +321,6 @@ export default defineComponent({
     const climaCargando   = ref(true)
     const climaError      = ref(false)
 
-    // Mapeo de WMO weather codes a ícono y descripción
     const WMO_ICONS = {
       0: '☀️', 1: '🌤', 2: '⛅', 3: '☁️',
       45: '🌫', 48: '🌫',
@@ -327,13 +340,11 @@ export default defineComponent({
       95: 'Tormenta', 96: 'Tormenta', 99: 'Tormenta fuerte',
     }
 
-    // Convierte grados a dirección cardinal
     const gradosADireccion = (deg) => {
       const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO']
       return dirs[Math.round(deg / 22.5) % 16]
     }
 
-    // Descripción y aptitud del mar según altura de ola
     const estadoMar = (oleaje) => {
       if (oleaje < 0.5)  return { descripcion: 'muy calmo',       apto: true  }
       if (oleaje < 1.0)  return { descripcion: 'calmo',           apto: true  }
@@ -342,17 +353,14 @@ export default defineComponent({
       return               { descripcion: 'agitado',             apto: false }
     }
 
-    // Porcentaje visual para la barra (máx referencia 3m)
     const oleajeAPorcentaje = (oleaje) => Math.min(Math.round((oleaje / 3) * 100), 100)
 
-    // Etiqueta del día
     const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
     const cargarClima = async () => {
       climaCargando.value = true
       climaError.value    = false
       try {
-        // Llamadas en paralelo a Forecast y Marine API
         const [resForecast, resMarine] = await Promise.all([
           fetch(
             `https://api.open-meteo.com/v1/forecast` +
@@ -372,7 +380,6 @@ export default defineComponent({
 
         const [fw, fm] = await Promise.all([resForecast.json(), resMarine.json()])
 
-        // Construir array de 6 días
         forecast.value = fw.daily.time.map((fecha, i) => {
           const date    = new Date(fecha + 'T12:00:00')
           const esHoy   = i === 0
@@ -411,13 +418,11 @@ export default defineComponent({
       }
     }
 
-    // Cargar al montar
     cargarClima()
 
     const diaActual = computed(() => forecast.value[diaSeleccionado.value] ?? null)
 
     // ── Salidas V6 con cupos ───────────────────────
-    // En producción: cargar desde store / API filtrado por tipo V6 + cupos > 0
     const salidasV6 = ref([
       { id: 1, hora: '08:00', fecha: 'hoy, 14 mar',  capacidad: 6, ocupados: 4, libres: 2, patron: 'C. Vega'   },
       { id: 2, hora: '10:30', fecha: 'hoy, 14 mar',  capacidad: 6, ocupados: 2, libres: 4, patron: 'M. Torres' },
@@ -426,7 +431,6 @@ export default defineComponent({
     ])
 
     const unirseASalida = (salida) => {
-      // Navegar al formulario de agenda pre-seleccionando la fecha/hora
       console.log('Unirse a salida:', salida)
       router.push({ name: 'agenda', query: { date: salida.fecha, hora: salida.hora } })
     }
@@ -436,7 +440,6 @@ export default defineComponent({
     }
 
     // ── Avisos ─────────────────────────────────────
-    // En producción: cargar desde store / API
     const avisos = ref([
       {
         id: 1,
@@ -465,7 +468,8 @@ export default defineComponent({
       usuario, iniciales, nombreCorto, fechaHoy, anioActual,
       stats, actividadMes, certVencePronto,
       proximasSalidas, cancelarSalida,
-      forecast, diaSeleccionado, diaActual, climaCargando, climaError, cargarClima, salidasV6, unirseASalida, irAgenda,
+      forecast, diaSeleccionado, diaActual, climaCargando, climaError, cargarClima,
+      salidasV6, unirseASalida, irAgenda,
       avisos,
     }
   },
@@ -478,7 +482,7 @@ export default defineComponent({
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ─────────────────────────────────────────────────
-   Contenedor principal — hereda vars del AppLayout
+   Contenedor principal
 ───────────────────────────────────────────────── */
 .home {
   font-family: 'Inter', sans-serif;
@@ -554,7 +558,6 @@ export default defineComponent({
   font-weight: 700;
   color: var(--text-primary, #0f172a);
   letter-spacing: -0.3px;
-  
 }
 
 .greet__club {
@@ -668,7 +671,6 @@ export default defineComponent({
   letter-spacing: -0.5px;
   line-height: 1.1;
   margin-top: 4px;
-  
 }
 
 .stat__value--sm { font-size: 1rem; margin-top: 6px; }
@@ -720,7 +722,6 @@ export default defineComponent({
   font-weight: 700;
   color: var(--text-primary, #0f172a);
   line-height: 1;
-  
 }
 
 .date-box__month {
@@ -740,7 +741,6 @@ export default defineComponent({
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-primary, #0f172a);
-  
 }
 
 .next-card__meta {
@@ -771,6 +771,67 @@ export default defineComponent({
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+
+/* ─── Skeleton shimmer ──────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.sk {
+  border-radius: 5px;
+  background: linear-gradient(
+    90deg,
+    var(--content-bg, #f1f5f9) 25%,
+    var(--surface-bg, #ffffff) 50%,
+    var(--content-bg, #f1f5f9) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  flex-shrink: 0;
+}
+
+/* Tamaños de los bloques skeleton */
+.sk--label     { width: 28px;  height: 10px; }
+.sk--day       { width: 22px;  height: 28px; border-radius: 5px; }
+.sk--icon      { width: 24px;  height: 24px; border-radius: 50%; }
+.sk--temp      { width: 20px;  height: 12px; }
+.sk--temp-min  { width: 14px;  height: 12px; opacity: 0.6; }
+
+.sk--cell-label { width: 50px;  height: 10px; }
+.sk--cell-value { width: 110px; height: 16px; margin-top: 2px; }
+.sk--cell-sub   { width: 140px; height: 10px; opacity: 0.7; }
+.sk--cell-bar   { width: 100%;  height: 4px;  border-radius: 2px; margin-top: 4px; }
+
+/* Contenedor de temperaturas en skeleton */
+.sk-temps {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* El skeleton reutiliza las mismas clases days-card / day-col / weather-cells / wcell
+   del estado cargado, pero los hijos son bloques .sk en lugar de texto */
+.weather-skeleton .day-col {
+  cursor: default;
+  pointer-events: none;
+}
+
+.weather-skeleton .wcell {
+  min-height: 68px;
+}
+
+/* ─── Fade-in al aparecer los datos reales ─────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.weather-grid--loaded {
+  animation: fadeInUp 0.4s ease both;
+}
+
+/* ─────────────────────────────────────────────── */
 
 .days-card {
   background: var(--surface-bg, #ffffff);
@@ -867,7 +928,6 @@ export default defineComponent({
   font-weight: 700;
   color: var(--text-primary, #0f172a);
   margin-top: 2px;
-  
 }
 
 .wcell__sub { font-size: 0.68rem; color: var(--text-secondary, #64748b); }
@@ -875,7 +935,7 @@ export default defineComponent({
 .val--green { color: var(--green) !important; }
 .val--red   { color: var(--red)   !important; }
 
-/* Estado carga clima */
+/* Estado error */
 .clima-estado {
   display: flex;
   align-items: center;
@@ -933,7 +993,6 @@ export default defineComponent({
   font-weight: 700;
   color: var(--text-primary, #0f172a);
   min-width: 46px;
-  
 }
 
 .salida-row__date {
@@ -1038,7 +1097,6 @@ export default defineComponent({
   font-size: 0.8rem;
   color: var(--text-primary, #0f172a);
   line-height: 1.5;
-  
 }
 
 .aviso__meta {
@@ -1048,15 +1106,15 @@ export default defineComponent({
 
 /* ── Responsive ───────────────────────────────── */
 @media (max-width: 860px) {
-  .stats-row       { grid-template-columns: 1fr 1fr; }
-  .weather-grid    { grid-template-columns: 1fr; }
+  .stats-row    { grid-template-columns: 1fr 1fr; }
+  .weather-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
-  .home            { padding: 14px; gap: 16px; }
-  .stats-row       { grid-template-columns: 1fr 1fr; }
-  .greet           { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .salida-row      { flex-wrap: wrap; }
-  .salida-row__patron { display: none; }
+  .home                 { padding: 14px; gap: 16px; }
+  .stats-row            { grid-template-columns: 1fr 1fr; }
+  .greet                { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .salida-row           { flex-wrap: wrap; }
+  .salida-row__patron   { display: none; }
 }
 </style>

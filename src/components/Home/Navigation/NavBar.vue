@@ -14,7 +14,7 @@
             <circle cx="33" cy="33" r="2.5" fill="#0d4a5c" opacity="0.6"/>
           </svg>
           <div class="logo-text">
-            <h2>Club Manuva'a</h2>
+            <h2>Club Canotaje</h2>
             <span>Canotaje · Coquimbo · Chile</span>
           </div>
         </div>

@@ -21,7 +21,7 @@
                 <line x1="16" y1="16" x2="32" y2="32" stroke="#74e8a0" stroke-width="2" stroke-linecap="round"/>
                 <circle cx="33" cy="33" r="2.5" fill="#4ac9a0" opacity="0.7"/>
               </svg>
-              <span>Club Manuva'a</span>
+              <span>Club Canotaje Coquimbo</span>
             </div>
             <p class="footer-tagline">Apasionados por el agua y el trabajo en equipo. Coquimbo, Chile.</p>
             <!-- Redes sociales -->

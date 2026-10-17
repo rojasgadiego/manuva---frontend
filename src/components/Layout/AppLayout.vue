@@ -65,8 +65,6 @@
               title="Modo oscuro"
             >🌙</button>
           </div>
-
-          
         </div>
       </header>
 
@@ -147,9 +145,10 @@ export default {
 
     // ── Menú ──────────────────────────────────────────────
     const menuItems = [
-      { name: 'Dashboard',      path: '/dashboard', icon: '📊' },
-      { name: 'Agendar salida', path: '/agenda', icon: '🛶' },
-      { name: 'Mi perfil',      path: '/perfil', icon: '👤' },
+      { name: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { name: 'Agenda',   path: '/agenda',    icon: '🛶' },
+      { name: 'Historial', path: '/historial',  icon: '📚' },
+      { name: 'Mi perfil', path: '/perfil',    icon: '👤' },
     ]
 
     const filteredMenuItems = computed(() =>
@@ -220,8 +219,6 @@ export default {
 
 /* ═══════════════════════════════════════════════════════
    VARIABLES DE TEMA
-   El sidebar siempre es oscuro en ambos modos.
-   Solo cambian header y área de contenido.
 ═══════════════════════════════════════════════════════ */
 
 .app-wrapper.dark {
@@ -273,7 +270,7 @@ export default {
 /* ─── Sidebar (siempre oscuro) ────────────────────────── */
 .sidebar {
   background-color: #0f1117;
-  width: 240px;
+  width: 180px;
   transition: width 0.5s cubic-bezier(0.23, 1, 0.32, 1);
   display: flex; flex-direction: column;
   z-index: 10; height: 100vh; overflow: hidden;
@@ -281,15 +278,19 @@ export default {
 
 .sidebar-collapsed .sidebar { width: 64px; }
 
+/* ── FIX: altura fija igual a .top-header para que las líneas
+   divisorias del sidebar y del header queden alineadas ── */
 .sidebar-header {
-  padding: 20px 14px;
-  display: flex; align-items: center;
+  height: 58px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
   border-bottom: 0.5px solid #1e2433;
 }
 
 .sidebar-collapsed .sidebar-header {
-  padding: 20px 0;
+  padding: 0;
   justify-content: center;
 }
 

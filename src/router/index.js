@@ -10,6 +10,7 @@ import Forbidden from '@/views/ForbiddenView.vue'
 import DashboardView from '@/views/Private/DashboardView.vue'
 import AgendaView from '@/views/Private/AgendaView.vue'
 import PerfilUsuario from '@/views/Private/PerfilUsuario.vue'
+import HistorialView from '@/views/Private/HistorialSalidas.vue'
 
 // Definir rutas
 const routes = [
@@ -59,6 +60,15 @@ const routes = [
     meta: {
       requiresAuth: true,
       title: 'Salidas'
+    }
+  },
+  {
+    path: '/historial',
+    name: 'Historial',
+    component: HistorialView,
+    meta: {
+      requiresAuth: true,
+      title: 'Historial de Salidas'
     }
   },
   // Ruta para configuración (solo admin)

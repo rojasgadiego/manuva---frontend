@@ -23,7 +23,7 @@
                 <line x1="16" y1="16" x2="32" y2="32" stroke="#1d7850" stroke-width="2" stroke-linecap="round"/>
                 <circle cx="33" cy="33" r="2.5" fill="#0d4a5c" opacity="0.6"/>
               </svg>
-              <span>Club Manuva'a</span>
+              <span>Club Canotaje Coquimbo</span>
             </div>
             <span class="status-badge">
               <span class="badge-dot"></span>

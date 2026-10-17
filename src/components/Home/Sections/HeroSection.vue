@@ -109,7 +109,7 @@ export default {
         {
           image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1600&q=80',
           badge: null,
-          title: 'Club Manuva\'a',
+          title: 'Club Canotaje Coquimbo',
           subtitle: 'Unidos por el agua · Coquimbo, Chile',
         },
       ]
