@@ -28,3 +28,20 @@ npm run build                           # genera dist/
 ```
 npm run lint
 ```
+
+## Docker
+
+`Dockerfile` compila la app y la sirve con nginx (`nginx/default.conf.template`):
+
+- Rutas del router en modo history (`/agenda`, `/salidas/12`…) caen en `index.html`.
+- `/api/` se envía a la API (`API_UPSTREAM`, por defecto `http://api:8080`), así frontend y API
+  comparten dominio y la cookie de sesión puede ser `SameSite=Strict`.
+- Cabeceras de seguridad básicas y caché larga solo para los archivos con hash del build.
+
+El sitio completo (SQL Server + API + este frontend) se levanta con el `docker-compose.yml`
+del repo `ClubCanotaje`.
+
+## Integración continua
+
+`.github/workflows/ci.yml`: lint, build y construcción de la imagen Docker en cada push a
+`main` y en cada pull request.
