@@ -1,37 +1,59 @@
 <template>
-  <div class="app-wrapper" :class="[{ 'sidebar-collapsed': isSidebarCollapsed }, theme]">
-    <div class="hover-area" @mouseenter="expandSidebar"></div>
+  <div class="app-wrapper" :class="{ 'sidebar-collapsed': isSidebarCollapsed, 'is-mobile': isMobile }">
+    <a href="#contenido" class="skip-link">Saltar al contenido</a>
 
-    <aside class="sidebar" @mouseenter="expandSidebar" @mouseleave="collapseSidebar">
+    <div v-if="!isMobile" class="hover-area" @mouseenter="expandSidebar"></div>
 
+    <aside
+      class="sidebar"
+      :aria-hidden="isMobile && isSidebarCollapsed ? 'true' : null"
+      @mouseenter="expandSidebar"
+      @mouseleave="collapseSidebar"
+    >
       <div class="sidebar-header">
         <div class="logo-container">
-          <div class="logo-icon">M</div>
+          <div class="logo-icon" aria-hidden="true">M</div>
           <span v-if="!isSidebarCollapsed" class="app-name">Manuva'a</span>
         </div>
+        <button v-if="isMobile" class="icon-btn close-btn" aria-label="Cerrar menú" @click="closeMobileSidebar">
+          <X :size="18" />
+        </button>
       </div>
 
-      <nav class="sidebar-nav">
-        <ul>
-          <li v-for="item in filteredMenuItems" :key="item.path">
-            <router-link
-              :to="item.path"
-              :class="{ active: isActive(item.path) }"
-              :title="item.name"
-              @click="isMobile ? closeMobileSidebar() : handleNavigation()"
-            >
-              <span class="menu-icon" v-html="item.icon"></span>
-              <span v-if="!isSidebarCollapsed" class="menu-text">{{ item.name }}</span>
-            </router-link>
-          </li>
-        </ul>
+      <nav class="sidebar-nav" aria-label="Navegación principal">
+        <template v-for="grupo in gruposMenu" :key="grupo.nombre">
+          <p v-if="grupo.nombre && !isSidebarCollapsed" class="nav-group">{{ grupo.nombre }}</p>
+          <div v-else-if="grupo.nombre" class="nav-divider" aria-hidden="true"></div>
+          <ul>
+            <li v-for="item in grupo.items" :key="item.path">
+              <router-link
+                :to="item.path"
+                :class="{ active: isActive(item.path) }"
+                :title="isSidebarCollapsed ? item.name : null"
+                :aria-current="isActive(item.path) ? 'page' : null"
+                @click="isMobile ? closeMobileSidebar() : handleNavigation()"
+              >
+                <component :is="item.icon" class="menu-icon" :size="18" aria-hidden="true" />
+                <span v-if="!isSidebarCollapsed" class="menu-text">{{ item.name }}</span>
+                <span v-else class="sr-only">{{ item.name }}</span>
+              </router-link>
+            </li>
+          </ul>
+        </template>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="footer-divider"></div>
-        <button class="logout-button" @click="logout" :title="isSidebarCollapsed ? 'Cerrar sesión' : ''">
-          <span class="logout-icon">⏻</span>
+        <div v-if="!isSidebarCollapsed && currentUser" class="user-card">
+          <span class="user-avatar" aria-hidden="true">{{ userInitials }}</span>
+          <div class="user-info">
+            <span class="user-name">{{ currentUser.nombreCompleto }}</span>
+            <span class="user-role">{{ userRole }}</span>
+          </div>
+        </div>
+        <button class="logout-button" :title="isSidebarCollapsed ? 'Cerrar sesión' : null" @click="logout">
+          <LogOut :size="17" aria-hidden="true" />
           <span v-if="!isSidebarCollapsed" class="logout-text">Cerrar sesión</span>
+          <span v-else class="sr-only">Cerrar sesión</span>
         </button>
       </div>
     </aside>
@@ -40,39 +62,44 @@
 
     <div class="main-content">
       <header class="top-header">
-        <button v-if="isMobile" class="menu-button" @click="expandSidebar" aria-label="Abrir menú">
-          ☰
-        </button>
         <div class="header-left">
-          <div class="header-accent"></div>
+          <div class="header-accent" aria-hidden="true"></div>
           <span class="page-title">{{ currentRouteName }}</span>
         </div>
         <div class="header-right">
           <span class="header-date">{{ currentDate }}</span>
 
-          <!-- Toggle de tema -->
-          <div class="theme-toggle">
-            <button
-              class="theme-btn"
-              :class="{ active: !isDark }"
-              @click="setTheme('light')"
-              title="Modo claro"
-            >☀️</button>
-            <button
-              class="theme-btn"
-              :class="{ active: isDark }"
-              @click="setTheme('dark')"
-              title="Modo oscuro"
-            >🌙</button>
+          <div class="theme-toggle" role="group" aria-label="Tema de color">
+            <button class="theme-btn" :class="{ active: !isDark }" :aria-pressed="!isDark" title="Modo claro" @click="setTheme('light')">
+              <Sun :size="15" aria-hidden="true" /><span class="sr-only">Modo claro</span>
+            </button>
+            <button class="theme-btn" :class="{ active: isDark }" :aria-pressed="isDark" title="Modo oscuro" @click="setTheme('dark')">
+              <Moon :size="15" aria-hidden="true" /><span class="sr-only">Modo oscuro</span>
+            </button>
           </div>
         </div>
       </header>
 
-      <main class="content-wrapper">
+      <main id="contenido" class="content-wrapper" tabindex="-1">
         <slot></slot>
       </main>
-    </div>
 
+      <!-- Navegación inferior en celular: accesos principales + "Más" abre el menú completo -->
+      <nav v-if="isMobile" class="bottom-nav" aria-label="Accesos rápidos">
+        <router-link
+          v-for="item in accesosMovil" :key="item.path" :to="item.path"
+          class="bottom-item" :class="{ active: isActive(item.path) }"
+          :aria-current="isActive(item.path) ? 'page' : null"
+        >
+          <component :is="item.icon" :size="20" aria-hidden="true" />
+          <span>{{ item.corto || item.name }}</span>
+        </router-link>
+        <button class="bottom-item" :aria-expanded="!isSidebarCollapsed" @click="expandSidebar">
+          <MoreHorizontal :size="20" aria-hidden="true" />
+          <span>Más</span>
+        </button>
+      </nav>
+    </div>
   </div>
 </template>
 
@@ -80,9 +107,29 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter, useRoute } from 'vue-router'
+import {
+  LayoutDashboard, CalendarDays, Trophy, History, CreditCard, UserRound,
+  Anchor, Users, ReceiptText, Wrench, LogOut, Sun, Moon, MoreHorizontal, X,
+} from 'lucide-vue-next'
+
+const MENU = [
+  { name: 'Inicio',     path: '/dashboard',      icon: LayoutDashboard },
+  { name: 'Agenda',     path: '/agenda',         icon: CalendarDays },
+  { name: 'Eventos',    path: '/eventos',        icon: Trophy },
+  { name: 'Historial',  path: '/historial',      icon: History },
+  { name: 'Membresía',  path: '/membresia',      icon: CreditCard, corto: 'Cuotas' },
+  { name: 'Mi perfil',  path: '/perfil',         icon: UserRound },
+  { name: 'Muelle',     path: '/muelle',         icon: Anchor,      grupo: 'Gestión', roles: ['Administrador', 'Entrenador'] },
+  { name: 'Socios',     path: '/admin/socios',   icon: Users,       grupo: 'Gestión', roles: ['Administrador', 'Directiva'] },
+  { name: 'Cobranza',   path: '/admin/cobranza', icon: ReceiptText, grupo: 'Gestión', roles: ['Administrador', 'Directiva'] },
+  { name: 'Flota',      path: '/admin/flota',    icon: Wrench,      grupo: 'Gestión', roles: ['Administrador', 'Entrenador'] },
+]
+const ACCESOS_MOVIL = ['/dashboard', '/agenda', '/eventos', '/membresia']
 
 export default {
   name: 'AppLayout',
+  components: { LogOut, Sun, Moon, MoreHorizontal, X },
+
   setup() {
     const store = useStore()
     const router = useRouter()
@@ -90,18 +137,16 @@ export default {
 
     // ── Sidebar ───────────────────────────────────────────
     const isSidebarCollapsed = ref(true)
-    const autoCollapseEnabled = ref(true)
     const isMobile = ref(false)
     let collapseTimer = null
 
     const checkMobile = () => {
+      const eraMovil = isMobile.value
       isMobile.value = window.innerWidth <= 768
-      autoCollapseEnabled.value = !isMobile.value
+      if (isMobile.value && !eraMovil) isSidebarCollapsed.value = true
     }
 
-    const closeMobileSidebar = () => {
-      if (isMobile.value) isSidebarCollapsed.value = true
-    }
+    const closeMobileSidebar = () => { if (isMobile.value) isSidebarCollapsed.value = true }
 
     const expandSidebar = () => {
       clearTimeout(collapseTimer)
@@ -109,22 +154,21 @@ export default {
     }
 
     const collapseSidebar = () => {
-      if (autoCollapseEnabled.value && !isMobile.value) {
-        clearTimeout(collapseTimer)
-        collapseTimer = setTimeout(() => { isSidebarCollapsed.value = true }, 300)
-      }
+      if (isMobile.value) return
+      clearTimeout(collapseTimer)
+      collapseTimer = setTimeout(() => { isSidebarCollapsed.value = true }, 300)
     }
 
     const handleNavigation = () => {
-      if (autoCollapseEnabled.value && !isMobile.value) {
-        clearTimeout(collapseTimer)
-        collapseTimer = setTimeout(() => { isSidebarCollapsed.value = true }, 2000)
-      }
+      if (isMobile.value) return
+      clearTimeout(collapseTimer)
+      collapseTimer = setTimeout(() => { isSidebarCollapsed.value = true }, 2000)
     }
+
+    const onKeydown = (e) => { if (e.key === 'Escape') closeMobileSidebar() }
 
     // ── Tema ──────────────────────────────────────────────
     const isDark = computed(() => store.getters['theme/isDark'])
-    const theme  = computed(() => store.getters['theme/theme'])
     const setTheme = (value) => store.dispatch('theme/setTheme', value)
 
     // ── Usuario ───────────────────────────────────────────
@@ -135,32 +179,23 @@ export default {
       return nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'
     })
 
-    const currentRouteName = computed(() => route.meta.title || route.name || 'Dashboard')
-
+    const currentRouteName = computed(() => route.meta.title || route.name || 'Inicio')
     const currentDate = computed(() =>
-      new Date().toLocaleDateString('es-CL', {
-        weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'
-      })
-    )
+      new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }))
 
-    // ── Menú ──────────────────────────────────────────────
-    const menuItems = [
-      { name: 'Dashboard',  path: '/dashboard',  icon: '📊' },
-      { name: 'Agenda',     path: '/agenda',     icon: '🛶' },
-      { name: 'Eventos',    path: '/eventos',    icon: '🏆' },
-      { name: 'Historial',  path: '/historial',  icon: '📚' },
-      { name: 'Membresía',  path: '/membresia',  icon: '💳' },
-      { name: 'Mi perfil',  path: '/perfil',     icon: '👤' },
-      { name: 'Muelle',     path: '/muelle',         icon: '⚓', roles: ['Administrador', 'Entrenador'] },
-      { name: 'Socios',     path: '/admin/socios',   icon: '👥', roles: ['Administrador', 'Directiva'] },
-      { name: 'Cobranza',   path: '/admin/cobranza', icon: '🧾', roles: ['Administrador', 'Directiva'] },
-      { name: 'Flota',      path: '/admin/flota',    icon: '🔧', roles: ['Administrador', 'Entrenador'] },
-    ]
-
-    // item.roles: si se define, el ítem solo se muestra a esos roles
-    const filteredMenuItems = computed(() =>
-      menuItems.filter(item => !item.roles?.length || item.roles.includes(userRole.value))
-    )
+    // ── Menú (item.roles: solo esos roles lo ven) ─────────
+    const visibles = computed(() => MENU.filter(i => !i.roles?.length || i.roles.includes(userRole.value)))
+    const gruposMenu = computed(() => {
+      const grupos = []
+      for (const item of visibles.value) {
+        const nombre = item.grupo ?? ''
+        let g = grupos.find(x => x.nombre === nombre)
+        if (!g) grupos.push(g = { nombre, items: [] })
+        g.items.push(item)
+      }
+      return grupos
+    })
+    const accesosMovil = computed(() => ACCESOS_MOVIL.map(p => MENU.find(i => i.path === p)))
 
     const isActive = (path) => route.path === path || route.path.startsWith(`${path}/`)
 
@@ -173,94 +208,47 @@ export default {
       }
     }
 
-    // ── Lifecycle ─────────────────────────────────────────
     onMounted(() => {
       checkMobile()
       window.addEventListener('resize', checkMobile)
-
-      const savedState = localStorage.getItem('sidebarState')
-      if (savedState) isSidebarCollapsed.value = savedState === 'collapsed'
-
-      if (autoCollapseEnabled.value && !isMobile.value) {
-        collapseTimer = setTimeout(() => { isSidebarCollapsed.value = true }, 2000)
-      }
+      window.addEventListener('keydown', onKeydown)
+      if (!isMobile.value) collapseTimer = setTimeout(() => { isSidebarCollapsed.value = true }, 2000)
     })
 
     onUnmounted(() => {
       window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('keydown', onKeydown)
       clearTimeout(collapseTimer)
     })
 
     watch(() => route.path, () => {
-      if (isMobile.value) {
-        isSidebarCollapsed.value = true
-      } else if (autoCollapseEnabled.value) {
-        clearTimeout(collapseTimer)
-        collapseTimer = setTimeout(() => { isSidebarCollapsed.value = true }, 2000)
-      }
-    })
-
-    watch(() => isSidebarCollapsed.value, (val) => {
-      localStorage.setItem('sidebarState', val ? 'collapsed' : 'expanded')
+      if (isMobile.value) isSidebarCollapsed.value = true
+      else handleNavigation()
     })
 
     return {
       isSidebarCollapsed, isMobile,
       currentUser, userRole, userInitials,
       currentRouteName, currentDate,
-      filteredMenuItems,
-      isDark, theme, setTheme,
+      gruposMenu, accesosMovil,
+      isDark, setTheme,
       expandSidebar, collapseSidebar, handleNavigation,
       isActive, logout, closeMobileSidebar,
     }
-  }
+  },
 }
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
-
-/* ═══════════════════════════════════════════════════════
-   VARIABLES DE TEMA
-═══════════════════════════════════════════════════════ */
-
-.app-wrapper.dark {
-  --header-bg:      #0f1117;
-  --header-border:  #1e2433;
-  --header-text:    #e2e8f0;
-  --header-muted:   #475569;
-  --content-bg:     #0c0e14;
-  --surface-bg:     #141820;
-  --surface-border: #1e2433;
-  --text-primary:   #e2e8f0;
-  --text-secondary: #64748b;
-  --toggle-bg:      #1e2433;
-  --toggle-active:  #0f1117;
-}
-
-.app-wrapper.light {
-  --header-bg:      #ffffff;
-  --header-border:  #e2e8f0;
-  --header-text:    #0f172a;
-  --header-muted:   #94a3b8;
-  --content-bg:     #f8fafc;
-  --surface-bg:     #ffffff;
-  --surface-border: #e2e8f0;
-  --text-primary:   #0f172a;
-  --text-secondary: #64748b;
-  --toggle-bg:      #f1f5f9;
-  --toggle-active:  #ffffff;
-}
-
 /* ─── Layout base ─────────────────────────────────────── */
 .app-wrapper {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background-color: var(--content-bg);
   position: relative;
-  font-family: 'Inter', sans-serif;
-  transition: background-color 0.25s ease;
+  font-family: var(--font-body);
 }
 
 .hover-area {
@@ -272,35 +260,26 @@ export default {
 
 /* ─── Sidebar (siempre oscuro) ────────────────────────── */
 .sidebar {
-  background-color: #0f1117;
-  width: 180px;
-  transition: width 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  background-color: var(--sidebar-bg);
+  width: 210px;
+  transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   display: flex; flex-direction: column;
-  z-index: 10; height: 100vh; overflow: hidden;
+  z-index: 20; height: 100%; overflow: hidden;
 }
-
 .sidebar-collapsed .sidebar { width: 64px; }
 
-/* ── FIX: altura fija igual a .top-header para que las líneas
-   divisorias del sidebar y del header queden alineadas ── */
 .sidebar-header {
   height: 58px;
   padding: 0 14px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-shrink: 0;
-  border-bottom: 0.5px solid #1e2433;
+  border-bottom: 0.5px solid var(--sidebar-border);
 }
+.sidebar-collapsed .sidebar-header { padding: 0; justify-content: center; }
 
-.sidebar-collapsed .sidebar-header {
-  padding: 0;
-  justify-content: center;
-}
-
-.logo-container {
-  display: flex; align-items: center;
-  gap: 10px; overflow: hidden;
-}
+.logo-container { display: flex; align-items: center; gap: 10px; overflow: hidden; }
 
 .logo-icon {
   width: 34px; height: 34px; min-width: 34px;
@@ -308,14 +287,14 @@ export default {
   background: linear-gradient(135deg, #38bdf8, #818cf8);
   color: white;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 700; font-size: 15px; letter-spacing: -0.5px;
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 15px;
 }
 
 .app-name {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem; font-weight: 600;
-  white-space: nowrap; color: #e2e8f0; letter-spacing: -0.2px;
+  white-space: nowrap; color: #e2e8f0;
 }
 
 /* ─── Nav ─────────────────────────────────────────────── */
@@ -323,104 +302,88 @@ export default {
   flex: 1; overflow-y: auto;
   padding: 12px 8px; scrollbar-width: none;
 }
-
 .sidebar-nav::-webkit-scrollbar { display: none; }
-
-.sidebar-collapsed .sidebar-nav {
-  padding: 12px 0;
-  display: flex; flex-direction: column; align-items: center;
-}
+.sidebar-collapsed .sidebar-nav { padding: 12px 0; }
 
 .sidebar-nav ul {
   list-style: none; padding: 0; margin: 0;
   display: flex; flex-direction: column; gap: 2px;
 }
-
 .sidebar-collapsed .sidebar-nav ul { align-items: center; }
+
+.nav-group {
+  font-family: var(--font-display);
+  font-size: 0.66rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #64748b;
+  padding: 16px 12px 6px;
+}
+.nav-divider { height: 0.5px; background: var(--sidebar-border); margin: 12px 14px; }
 
 .sidebar-nav a {
   display: flex; align-items: center; gap: 11px;
-  padding: 10px 12px;
-  text-decoration: none; color: #4a5568;
-  border-radius: 7px; border-left: 2px solid transparent;
+  min-height: 40px;
+  padding: 0 12px;
+  text-decoration: none; color: var(--sidebar-text);
+  border-radius: 8px; border-left: 2px solid transparent;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   white-space: nowrap; overflow: hidden;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-display);
 }
+.sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 0; width: 42px; border-left: none; }
 
-.sidebar-collapsed .sidebar-nav a {
-  justify-content: center; padding: 10px 0;
-  width: 42px; border-left: none;
-}
+.sidebar-nav a:hover { background-color: rgba(255, 255, 255, 0.06); color: var(--sidebar-text-hover); }
+.sidebar-nav a.active { background-color: rgba(56, 189, 248, 0.12); color: #38bdf8; border-left-color: #38bdf8; }
+.sidebar-nav a:focus-visible { outline: 2px solid #38bdf8; outline-offset: -2px; }
 
-.sidebar-nav a:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #94a3b8;
-}
-
-.sidebar-nav a.active {
-  background-color: rgba(56, 189, 248, 0.1);
-  color: #38bdf8; border-left-color: #38bdf8;
-}
-
-.sidebar-collapsed .sidebar-nav a.active {
-  border-left: none;
-  background-color: rgba(56, 189, 248, 0.1);
-  color: #38bdf8;
-}
-
-.menu-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 18px; min-width: 18px; font-size: 15px;
-}
-
-.menu-text { font-size: 0.875rem; font-weight: 500; color: inherit; }
+.menu-icon { flex-shrink: 0; }
+.menu-text { font-size: 0.875rem; font-weight: 500; }
 
 /* ─── Footer sidebar ──────────────────────────────────── */
-.sidebar-footer { padding: 0 8px 18px; flex-shrink: 0; }
-
-.sidebar-collapsed .sidebar-footer {
-  padding: 0 0 18px;
-  display: flex; flex-direction: column; align-items: center;
+.sidebar-footer {
+  padding: 10px 8px 16px;
+  flex-shrink: 0;
+  border-top: 0.5px solid var(--sidebar-border);
+  display: flex; flex-direction: column; gap: 6px;
 }
+.sidebar-collapsed .sidebar-footer { align-items: center; padding: 10px 0 16px; }
 
-.footer-divider {
-  height: 0.5px; background: #1e2433; margin: 0 4px 12px;
+.user-card { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+.user-avatar {
+  width: 32px; height: 32px; min-width: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #fff; font-family: var(--font-display); font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
 }
+.user-info { display: flex; flex-direction: column; min-width: 0; }
+.user-name { color: #e2e8f0; font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { color: #64748b; font-size: 0.72rem; }
 
 .logout-button {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; background: transparent; border: none;
-  border-radius: 7px; cursor: pointer; color: #4a5568; width: 100%;
+  min-height: 40px; padding: 0 12px;
+  background: transparent; border: none; border-radius: 8px;
+  cursor: pointer; color: var(--sidebar-text); width: 100%;
+  font-family: var(--font-display); font-size: 0.875rem; font-weight: 500;
+  white-space: nowrap;
   transition: background 0.15s, color 0.15s;
-  white-space: nowrap; overflow: hidden;
-  font-family: 'Plus Jakarta Sans', sans-serif;
 }
+.sidebar-collapsed .logout-button { width: 42px; padding: 0; justify-content: center; }
+.logout-button:hover { background-color: rgba(239, 68, 68, 0.1); color: #f87171; }
 
-.sidebar-collapsed .logout-button {
-  width: 42px; height: 42px; padding: 0; justify-content: center;
+.icon-btn {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; border-radius: 8px;
+  color: var(--sidebar-text); cursor: pointer;
 }
-
-.logout-button:hover {
-  background-color: rgba(239, 68, 68, 0.08); color: #f87171;
-}
-
-.logout-icon { font-size: 13px; min-width: 18px; display: flex; justify-content: center; }
-.logout-text { font-size: 0.875rem; font-weight: 500; }
 
 /* ─── Overlay móvil ───────────────────────────────────── */
-.sidebar-overlay {
-  position: fixed; inset: 0;
-  background-color: rgba(0, 0, 0, 0.55); z-index: 5;
-}
+.sidebar-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.55); z-index: 15; }
 
 /* ─── Main content ────────────────────────────────────── */
-.main-content {
-  flex: 1; display: flex; flex-direction: column;
-  overflow: hidden; height: 100vh;
-}
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
-/* ─── Top header ──────────────────────────────────────── */
 .top-header {
   height: 58px;
   background-color: var(--header-bg);
@@ -428,103 +391,70 @@ export default {
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 0.5px solid var(--header-border);
   flex-shrink: 0; gap: 16px;
-  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
-.menu-button {
-  background: none; border: none; font-size: 18px;
-  margin-right: 4px; padding: 8px; cursor: pointer;
-  color: #94a3b8; display: none; border-radius: 7px;
-  flex-shrink: 0; line-height: 1;
-}
-
-.menu-button:hover { background-color: rgba(255, 255, 255, 0.06); }
-
-.header-left { display: flex; align-items: center; gap: 10px; }
-
-.header-accent {
-  width: 2.5px; height: 16px;
-  border-radius: 2px; background: #38bdf8; flex-shrink: 0;
-}
-
+.header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.header-accent { width: 2.5px; height: 16px; border-radius: 2px; background: var(--ui-cyan); flex-shrink: 0; }
 .page-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px; font-weight: 600;
   color: var(--header-text);
-  white-space: nowrap; letter-spacing: -0.1px;
-  transition: color 0.25s ease;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .header-right { display: flex; align-items: center; gap: 14px; }
+.header-date { font-size: 12px; color: var(--header-muted); white-space: nowrap; }
 
-.header-date {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px; font-weight: 400;
-  color: var(--header-muted); white-space: nowrap;
-  transition: color 0.25s ease;
-}
-
-/* ─── Toggle de tema ──────────────────────────────────── */
-.theme-toggle {
-  display: flex; align-items: center;
-  background: var(--toggle-bg);
-  border-radius: 8px; padding: 3px; gap: 2px;
-  transition: background 0.25s ease;
-}
-
+.theme-toggle { display: flex; align-items: center; background: var(--toggle-bg); border-radius: 8px; padding: 3px; gap: 2px; }
 .theme-btn {
-  width: 28px; height: 28px;
+  width: 30px; height: 28px;
   border: none; border-radius: 6px;
   background: transparent; cursor: pointer;
-  font-size: 13px;
+  color: var(--header-muted);
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s ease, opacity 0.15s ease;
-  opacity: 0.4;
+  transition: background 0.15s ease, color 0.15s ease;
 }
+.theme-btn.active { background: var(--toggle-active); color: var(--header-text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+.theme-btn:not(.active):hover { color: var(--header-text); }
 
-.theme-btn.active {
-  background: var(--toggle-active);
-  opacity: 1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-.theme-btn:not(.active):hover { opacity: 0.7; }
-
-/* ─── Avatar ──────────────────────────────────────────── */
-.user-avatar {
-  width: 30px; height: 30px; min-width: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #38bdf8, #818cf8);
-  color: white;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 12px; font-weight: 600;
-  cursor: default; user-select: none;
-}
-
-/* ─── Content wrapper ─────────────────────────────────── */
 .content-wrapper {
   flex: 1; padding: 24px; overflow: auto;
   display: flex; flex-direction: column;
   background-color: var(--content-bg);
-  font-family: 'Inter', sans-serif;
   color: var(--text-primary);
-  transition: background-color 0.25s ease, color 0.25s ease;
 }
+.content-wrapper:focus { outline: none; }
+
+/* ─── Navegación inferior (celular) ───────────────────── */
+.bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  flex-shrink: 0;
+  background: var(--header-bg);
+  border-top: 0.5px solid var(--header-border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bottom-item {
+  min-height: 58px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-secondary);
+  font-family: var(--font-display); font-size: 0.66rem; font-weight: 600;
+  text-decoration: none;
+}
+.bottom-item.active { color: var(--ui-cyan); }
 
 /* ─── Móviles ─────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed; height: 100%;
-    transform: translateX(-100%); width: 240px;
-    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1);
   }
-
-  .sidebar-collapsed .sidebar { transform: translateX(-100%); }
+  .sidebar-collapsed .sidebar { width: 260px; }
   .app-wrapper:not(.sidebar-collapsed) .sidebar { transform: translateX(0); }
 
-  .menu-button { display: flex; }
-  .hover-area { display: none; }
   .content-wrapper { padding: 16px; }
   .top-header { padding: 0 16px; }
   .header-date { display: none; }

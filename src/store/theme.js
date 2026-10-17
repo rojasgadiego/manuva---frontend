@@ -33,9 +33,26 @@ const applyTheme = async (commit, theme) => {
   if (el) el.remove()
 }
 
-const state = () => ({
-  theme: localStorage.getItem(STORAGE_KEY) || 'dark',
-})
+/** Aplica el tema en <html data-theme> para que los tokens (tokens.css) lleguen a toda la app. */
+const aplicarEnDocumento = (theme) => {
+  document.documentElement.dataset.theme = theme
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', theme === 'dark' ? '#0c0e14' : '#f8fafc')
+}
+
+const leerTemaGuardado = () => {
+  try {
+    const guardado = localStorage.getItem(STORAGE_KEY)
+    if (guardado === 'dark' || guardado === 'light') return guardado
+  } catch { /* almacenamiento no disponible: usar preferencia del sistema */ }
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+}
+
+const state = () => {
+  const theme = leerTemaGuardado()
+  aplicarEnDocumento(theme)
+  return { theme }
+}
 
 const getters = {
   theme:  (state) => state.theme,
@@ -45,7 +62,8 @@ const getters = {
 const mutations = {
   SET_THEME(state, theme) {
     state.theme = theme
-    localStorage.setItem(STORAGE_KEY, theme)
+    aplicarEnDocumento(theme)
+    try { localStorage.setItem(STORAGE_KEY, theme) } catch { /* sin persistencia */ }
   },
 }
 

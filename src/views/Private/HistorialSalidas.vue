@@ -9,12 +9,12 @@
           <p class="hist-header__sub">{{ totalSalidas }} salidas registradas</p>
         </div>
         <div class="hist-header__filters">
-          <select class="hist-select" v-model="filtroTipo">
+          <select class="hist-select" v-model="filtroTipo" aria-label="Filtrar por tipo de canoa">
             <option value="">Todos los tipos</option>
             <option value="V1">V1</option>
             <option value="V6">V6</option>
           </select>
-          <select class="hist-select" v-model="filtroRol">
+          <select class="hist-select" v-model="filtroRol" aria-label="Filtrar por rol">
             <option value="">Todos los roles</option>
             <option value="Responsable">Responsable</option>
             <option value="Participante">Participante</option>
@@ -37,9 +37,19 @@
       <!-- ── Lista ── -->
       <template v-else>
 
-        <!-- Vacío -->
+        <!-- Vacío: sin salidas en absoluto, o filtros sin resultados -->
         <div v-if="salidasFiltradas.length === 0" class="hist-empty">
-          No hay salidas que coincidan con los filtros.
+          <EmptyState
+            v-if="historial.length === 0"
+            :icono="History"
+            titulo="Aún no tienes salidas en tu historial"
+            texto="Cuando participes en una salida, aparecerá aquí con sus horarios reales."
+          >
+            <router-link to="/agenda" class="ui-btn ui-btn--primary">Ver la agenda</router-link>
+          </EmptyState>
+          <EmptyState v-else titulo="Ninguna salida coincide con los filtros">
+            <button class="ui-btn ui-btn--ghost" @click="filtroTipo = ''; filtroRol = ''">Quitar filtros</button>
+          </EmptyState>
         </div>
 
         <!-- Grupos por fecha -->
@@ -50,7 +60,11 @@
         >
           <div class="hist-grupo__label">{{ fecha }}</div>
 
-          <div class="hist-row" v-for="s in grupo" :key="s.idSalida">
+          <router-link
+            v-for="s in grupo" :key="s.idSalida"
+            :to="`/salidas/${s.idSalida}`" class="hist-row"
+            :aria-label="`Salida de las ${formatHora(s.fechaHoraProgramada)} en ${s.nombreCanoa}, ${s.nombreEstado}`"
+          >
 
             <!-- Acento de tipo canoa -->
             <div class="hist-row__accent" :class="`accent--${s.tipoCanoa.toLowerCase()}`"></div>
@@ -89,7 +103,7 @@
               </span>
             </div>
 
-          </div>
+          </router-link>
         </div>
 
       <!-- ── Sentinel infinite scroll ── -->
@@ -107,11 +121,13 @@
 <script>
 import { defineComponent, ref, computed, onMounted, onUnmounted } from 'vue'
 import AppLayout from '@/components/Layout/AppLayout.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import { History } from 'lucide-vue-next'
 import salidaService from '@/services/salida.service';
 
 export default defineComponent({
   name: 'HistorialSalidas',
-  components: { AppLayout },
+  components: { AppLayout, EmptyState },
 
   setup() {
     const historial   = ref([])
@@ -234,14 +250,13 @@ export default defineComponent({
       salidasFiltradas, salidasAgrupadas, totalSalidas,
       estadoClass,
       formatHora, cargarHistorial,
-      cargandoMas, hayMas, sentinel,
+      cargandoMas, hayMas, sentinel, History,
     }
   },
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -334,7 +349,7 @@ export default defineComponent({
   font-size: 0.8rem;
   color: var(--text-secondary, #64748b);
   text-align: center;
-  padding: 32px;
+  padding: 0;
   background: var(--surface-bg, #ffffff);
   border: 0.5px solid var(--surface-border, #e2e8f0);
   border-radius: 10px;
@@ -355,7 +370,6 @@ export default defineComponent({
   letter-spacing: 0.08em;
   color: var(--text-secondary, #64748b);
   padding: 0 2px;
-  text-transform: capitalize;
 }
 
 /* ── Fila de salida ───────────────────────────── */
@@ -368,7 +382,8 @@ export default defineComponent({
   align-items: center;
   gap: 0;
 }
-.hist-row:hover { border-color: var(--cyan); }
+.hist-row { text-decoration: none; color: inherit; transition: border-color 0.15s, transform 0.15s; }
+.hist-row:hover { border-color: var(--cyan); transform: translateY(-1px); }
 
 /* Acento lateral por tipo */
 .hist-row__accent {

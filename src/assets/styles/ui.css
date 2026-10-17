@@ -1,17 +1,8 @@
 /* ═══════════════════════════════════════════════════════
    Componentes UI compartidos del área privada (prefijo ui-).
-   Usan las variables de tema que define AppLayout (.dark / .light):
+   Usan los tokens de tema de tokens.css (data-theme en <html>):
    --surface-bg, --surface-border, --content-bg, --text-primary, --text-secondary.
 ═══════════════════════════════════════════════════════ */
-
-:root {
-  --ui-cyan: #38bdf8;   --ui-cyan-dim: rgba(56, 189, 248, 0.12);
-  --ui-green: #22c55e;  --ui-green-dim: rgba(34, 197, 94, 0.12);
-  --ui-amber: #f59e0b;  --ui-amber-dim: rgba(245, 158, 11, 0.12);
-  --ui-red: #ef4444;    --ui-red-dim: rgba(239, 68, 68, 0.1);
-  --ui-indigo: #818cf8; --ui-indigo-dim: rgba(129, 140, 248, 0.12);
-  --ui-radius: 14px;
-}
 
 /* ── Página ─────────────────────────────────────────── */
 .ui-page {
@@ -236,4 +227,40 @@
 
 @media (max-width: 600px) {
   .ui-table th, .ui-table td { padding: 10px; }
+}
+
+/* ── Tabla apilada: en pantallas chicas cada fila se ve como tarjeta.
+   Uso: <table class="ui-table ui-table--stack"> y data-label="Columna" en cada <td>. ── */
+@media (max-width: 600px) {
+  .ui-table--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ui-table--stack tr {
+    display: block;
+    padding: 10px 14px;
+    border-bottom: 0.5px solid var(--surface-border);
+  }
+  .ui-table--stack tr:last-child { border-bottom: none; }
+  .ui-table--stack td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 0;
+    border: none;
+    text-align: right;
+  }
+  .ui-table--stack td::before {
+    content: attr(data-label);
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    text-align: left;
+  }
+  .ui-table--stack td[data-label=""]::before { content: none; }
+  .ui-table--stack td[data-label=""] { justify-content: flex-end; }
+  /* Primera celda (nombre del socio): encabezado de la tarjeta, sin etiqueta */
+  .ui-table--stack td.ui-celda-titulo { display: block; text-align: left; padding-bottom: 8px; }
+  .ui-table--stack td.ui-celda-titulo::before { content: none; }
 }

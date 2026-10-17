@@ -2,7 +2,7 @@
   <div class="calendar-panel">
     <div class="calendar-card">
       <div class="calendar-header">
-        <button class="nav-btn" @click="$emit('prev-month')">‹</button>
+        <button class="nav-btn" aria-label="Mes anterior" @click="$emit('prev-month')">‹</button>
 
         <h2>{{ monthYearLabel }}</h2>
 
@@ -12,16 +12,17 @@
             <span class="legend-item"><span class="legend-dot partial"></span>Casi lleno</span>
             <span class="legend-item"><span class="legend-dot full"></span>Sin cupos</span>
           </div>
-          <button class="nav-btn" @click="$emit('next-month')">›</button>
+          <button class="nav-btn" aria-label="Mes siguiente" @click="$emit('next-month')">›</button>
         </div>
       </div>
 
       <div class="calendar-grid">
         <div v-for="d in weekDays" :key="d" class="calendar-day-name">{{ d }}</div>
 
-        <div
+        <button
           v-for="day in calendarDays"
           :key="day.date"
+          type="button"
           class="calendar-day"
           :class="[
             { today:    day.isToday },
@@ -30,7 +31,10 @@
             { past:     day.isPast },
             day.tieneSalidas ? getEstado(day) : 'empty'
           ]"
-          @click="!day.isPast && $emit('select-day', day)"
+          :disabled="day.isPast || !day.currentMonth"
+          :aria-label="etiqueta(day)"
+          :aria-current="day.isToday ? 'date' : null"
+          @click="$emit('select-day', day)"
         >
           <div class="day-header">
             <span class="day-number">{{ day.day }}</span>
@@ -39,6 +43,7 @@
               class="day-badge"
               :class="getEstado(day)"
             >{{ day.totalSalidas }} sal.</span>
+            <span v-if="day.tieneSalidas" class="day-dot" :class="getEstado(day)" aria-hidden="true"></span>
           </div>
 
           <div v-if="day.tieneSalidas" class="day-cupos">
@@ -50,7 +55,13 @@
               <span class="cupos-label">cupos libres</span>
             </template>
           </div>
-        </div>
+        </button>
+      </div>
+
+      <div class="legend legend--abajo" aria-hidden="true">
+        <span class="legend-item"><span class="legend-dot available"></span>Disponible</span>
+        <span class="legend-item"><span class="legend-dot partial"></span>Casi lleno</span>
+        <span class="legend-item"><span class="legend-dot full"></span>Sin cupos</span>
       </div>
     </div>
   </div>
@@ -89,8 +100,18 @@ export default defineComponent({
       return 'available'
     }
 
+    // Texto para lectores de pantalla: "jueves 22 de octubre, 3 salidas, 9 cupos libres"
+    const etiqueta = (day) => {
+      const fecha = new Date(day.date + 'T12:00:00')
+        .toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+      if (!day.tieneSalidas) return `${fecha}, sin salidas`
+      const cupos = day.cuposDisponibles === 0 ? 'sin cupos' : `${day.cuposDisponibles} cupos libres`
+      return `${fecha}, ${day.totalSalidas} salida${day.totalSalidas !== 1 ? 's' : ''}, ${cupos}`
+    }
+
     return {
       weekDays,
+      etiqueta,
       isSelected,
       getPorcentajeOcupacion,
       getEstado,
@@ -100,7 +121,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
 .calendar-panel {
   --green:      #22c55e;
@@ -133,7 +153,7 @@ export default defineComponent({
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto; /* si no cabe, se desplaza en vez de cortar la última semana */
   transition: background 0.25s ease, border-color 0.25s ease;
 }
 
@@ -155,7 +175,6 @@ export default defineComponent({
   font-weight: 700;
   color: var(--text-primary, #e2e8f0);
   margin: 0;
-  text-transform: capitalize;
   letter-spacing: -0.3px;
   white-space: nowrap;
   pointer-events: none;
@@ -215,10 +234,9 @@ export default defineComponent({
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, minmax(100px, 1fr));
+  grid-template-rows: auto repeat(6, minmax(78px, 1fr));
   gap: 5px;
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto; /* crece para llenar, pero nunca se encoge bajo su contenido */
 }
 
 .calendar-day-name {
@@ -234,6 +252,11 @@ export default defineComponent({
 
 /* ── Día base ── */
 .calendar-day {
+  /* es un <button>: anular estilos del navegador */
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
   border-radius: 8px;
   padding: 9px 9px 8px;
   cursor: pointer;
@@ -288,6 +311,14 @@ export default defineComponent({
 .calendar-day.selected .full-tag    { color: #0f1117; }
 
 .calendar-day.inactive { opacity: 0.2; pointer-events: none; }
+.calendar-day:disabled { cursor: not-allowed; }
+.calendar-day:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+
+/* Punto de disponibilidad: solo en pantallas chicas, donde no caben los cupos */
+.day-dot { display: none; width: 7px; height: 7px; border-radius: 50%; }
+.day-dot.available { background: var(--green); }
+.day-dot.partial   { background: var(--yellow); }
+.day-dot.full      { background: var(--red); }
 .calendar-day.past     { opacity: 0.25; cursor: not-allowed; }
 .calendar-day.past:hover { transform: none; }
 
@@ -349,8 +380,11 @@ export default defineComponent({
 }
 
 /* ── Responsive ── */
+.legend--abajo { display: none; }
+
 @media (max-width: 860px) {
   .legend { display: none; }
+  .legend--abajo { display: flex; justify-content: center; margin-top: 12px; }
 }
 
 @media (max-width: 600px) {
@@ -358,8 +392,10 @@ export default defineComponent({
     grid-template-rows: auto repeat(6, minmax(70px, 1fr));
   }
   .calendar-day   { padding: 6px 5px; border-radius: 6px; }
-  .day-header     { justify-content: center; }
+  .day-header     { flex-direction: column; gap: 4px; }
   .day-badge, .day-cupos { display: none; }
+  .day-dot        { display: block; }
+  .calendar-day   { align-items: center; text-align: center; }
 
   .calendar-header h2 { position: static; transform: none; }
   .header-right { margin-left: 0; }

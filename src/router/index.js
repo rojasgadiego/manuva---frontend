@@ -1,15 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import store from '@/store'
 
-// Importar vistas
+// Vistas públicas: carga inmediata. Las privadas se cargan al navegar (import dinámico)
 import Home from '@/views/HomeView.vue'
 import Login from '@/views/autenticacion/LoginView.vue'
 import NotFound from '@/views/NotFoundView.vue'
 import Forbidden from '@/views/ForbiddenView.vue'
-import DashboardView from '@/views/Private/DashboardView.vue'
-import AgendaView from '@/views/Private/AgendaView.vue'
-import PerfilUsuario from '@/views/Private/PerfilUsuario.vue'
-import HistorialView from '@/views/Private/HistorialSalidas.vue'
 
 // Definir rutas
 const routes = [
@@ -49,16 +45,16 @@ const routes = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: DashboardView,
+    component: () => import('@/views/Private/DashboardView.vue'),
     meta: {
       requiresAuth: true,
-      title: 'Panel Principal'
+      title: 'Inicio'
     }
   },
   {
     path: '/agenda',
     name: 'Agenda',
-    component: AgendaView,
+    component: () => import('@/views/Private/AgendaView.vue'),
     meta: {
       requiresAuth: true,
       title: 'Salidas'
@@ -119,7 +115,7 @@ const routes = [
   {
     path: '/historial',
     name: 'Historial',
-    component: HistorialView,
+    component: () => import('@/views/Private/HistorialSalidas.vue'),
     meta: {
       requiresAuth: true,
       title: 'Historial de Salidas'
@@ -129,7 +125,7 @@ const routes = [
   {
     path: '/perfil',
     name: 'Perfil',
-    component: PerfilUsuario,
+    component: () => import('@/views/Private/PerfilUsuario.vue'),
     meta: {
       requiresAuth: true,
       title: 'Mi Perfil'

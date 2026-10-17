@@ -132,16 +132,19 @@
 
           <Transition name="expand">
             <div v-if="showTimeline" class="timeline-inline">
-              <div
+              <button
                 v-for="t in availableTimes" :key="t.value"
+                type="button"
                 class="tl-row"
                 :class="{ 'tl-selected': localForm.hora === t.value, 'tl-full': t.disabled }"
+                :disabled="t.disabled"
+                :aria-pressed="localForm.hora === t.value"
                 @click="selectHour(t)"
               >
                 <span class="tl-time">{{ t.value }}</span>
-                <div class="tl-bar-wrap">
-                  <div class="tl-bar" :class="{ active: salidasPorHora(t.value).length > 0 || localForm.hora === t.value }"></div>
-                </div>
+                <span class="tl-bar-wrap">
+                  <span class="tl-bar" :class="{ active: salidasPorHora(t.value).length > 0 || localForm.hora === t.value }"></span>
+                </span>
                 <span class="tl-status">
                   <template v-if="salidasPorHora(t.value).length">
                     <span v-for="s in salidasPorHora(t.value)" :key="s.id" class="tl-pill" :class="s.cuposLibres <= 0 ? 'pill-full' : 'pill-ok'">
@@ -152,7 +155,7 @@
                   <span v-else class="tl-free">Libre</span>
                 </span>
                 <span v-if="localForm.hora === t.value" class="tl-mine">✓</span>
-              </div>
+              </button>
             </div>
           </Transition>
         </div>
@@ -325,7 +328,7 @@ export default defineComponent({
     const dateLabel = computed(() => {
       if (!props.selectedDay) return ''
       const d = new Date(props.selectedDay.date + 'T12:00:00')
-      return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+      return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, c => c.toUpperCase())
     })
 
     const salidasDia = computed(() => dia.value?.salidas ?? [])
@@ -483,7 +486,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
 * { box-sizing: border-box; }
 
@@ -564,7 +566,6 @@ export default defineComponent({
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary, #0f172a);
-  text-transform: capitalize;
   line-height: 1.2;
   letter-spacing: -0.2px;
   transition: color 0.25s ease;
@@ -676,6 +677,12 @@ export default defineComponent({
 }
 
 .tl-row {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
   display: grid;
   grid-template-columns: 44px 10px 1fr auto;
   align-items: center;
@@ -701,6 +708,7 @@ export default defineComponent({
 
 .tl-bar-wrap { display: flex; align-items: center; }
 .tl-bar {
+  display: block;
   width: 2.5px; height: 18px;
   border-radius: 2px;
   background: var(--surface-border, #e2e8f0);

@@ -32,7 +32,7 @@
         <div v-if="cargando" class="ui-skeleton"></div>
         <div v-else-if="!cuotas.length" class="ui-empty">No hay cuotas pendientes. ¡Todos al día!</div>
         <div v-else class="ui-table-wrap">
-          <table class="ui-table">
+          <table class="ui-table ui-table--stack">
             <thead>
               <tr>
                 <th>Socio</th>
@@ -45,18 +45,18 @@
             </thead>
             <tbody>
               <tr v-for="c in cuotas" :key="c.idCuota">
-                <td>
+                <td class="ui-celda-titulo" data-label="Socio">
                   <span class="nombre">{{ c.nombreCompleto }}</span>
                   <span class="ui-muted contacto">{{ c.email }}{{ c.telefono ? ` · ${c.telefono}` : '' }}</span>
                 </td>
-                <td class="periodo">{{ periodo(c.periodo) }}</td>
-                <td>
-                  {{ fecha(c.fechaVencimiento) }}
-                  <span v-if="c.diasVencida > 0" class="ui-muted atraso">{{ c.diasVencida }} d de atraso</span>
+                <td class="periodo" data-label="Periodo">{{ periodo(c.periodo) }}</td>
+                <td data-label="Vence">
+                  <span>{{ fecha(c.fechaVencimiento) }}
+                  <span v-if="c.diasVencida > 0" class="ui-muted atraso">{{ c.diasVencida }} d de atraso</span></span>
                 </td>
-                <td class="ui-num">{{ clp(c.monto) }}</td>
-                <td><span class="ui-chip" :class="claseEstadoCuota(c.estadoPago)">{{ c.estadoPago }}</span></td>
-                <td class="ui-num"><button class="ui-btn ui-btn--green ui-btn--sm" @click="abrirPago(c)">Registrar pago</button></td>
+                <td class="ui-num" data-label="Monto">{{ clp(c.monto) }}</td>
+                <td data-label="Estado"><span class="ui-chip" :class="claseEstadoCuota(c.estadoPago)">{{ c.estadoPago }}</span></td>
+                <td class="ui-num" data-label=""><button class="ui-btn ui-btn--green ui-btn--sm" @click="abrirPago(c)">Registrar pago</button></td>
               </tr>
             </tbody>
           </table>

@@ -37,7 +37,7 @@ export default {
   flex-direction: column;
   gap: 8px;
   width: min(360px, calc(100vw - 32px));
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
 }
 
 .toast {
@@ -47,13 +47,13 @@ export default {
   align-items: flex-start;
   gap: 10px;
   padding: 12px 12px 14px;
-  background: #141820;
-  border: 0.5px solid #1e2433;
+  background: var(--surface-raised, #1a1f2a);
+  border: 0.5px solid var(--surface-border, #232a38);
   border-left: 3px solid var(--tono);
   border-radius: 10px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-pop);
   overflow: hidden;
-  color: #e2e8f0;
+  color: var(--text-primary, #e2e8f0);
 }
 
 .toast-success { --tono: #22c55e; }
@@ -78,13 +78,13 @@ export default {
 .toast-close {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-secondary, #94a3b8);
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
   padding: 0 2px;
 }
-.toast-close:hover { color: #e2e8f0; }
+.toast-close:hover { color: var(--text-primary); }
 
 .toast-progress {
   position: absolute;

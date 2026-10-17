@@ -72,6 +72,7 @@
               <p class="aviso__text">{{ a.mensaje }}</p>
               <p class="aviso__meta">{{ a.meta }}</p>
             </div>
+            <router-link v-if="a.ruta" :to="a.ruta" class="aviso__accion">Ver</router-link>
           </div>
         </div>
       </section>
@@ -111,83 +112,7 @@
       <!-- ── Condiciones del día ── -->
       <section class="section">
         <h2 class="section__title">Condiciones del día</h2>
-
-        <!-- Skeleton de carga -->
-        <div v-if="climaCargando" class="weather-grid weather-skeleton">
-          <div class="days-card">
-            <div class="day-col" v-for="i in 6" :key="i">
-              <div class="sk sk--label"></div>
-              <div class="sk sk--day"></div>
-              <div class="sk sk--icon"></div>
-              <div class="sk-temps">
-                <div class="sk sk--temp"></div>
-                <div class="sk sk--temp-min"></div>
-              </div>
-            </div>
-          </div>
-          <div class="weather-cells">
-            <div class="wcell" v-for="i in 3" :key="i">
-              <div class="sk sk--cell-label"></div>
-              <div class="sk sk--cell-value"></div>
-              <div class="sk sk--cell-sub"></div>
-              <div v-if="i === 1" class="sk sk--cell-bar"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Error -->
-        <div v-else-if="climaError" class="clima-estado clima-estado--error">
-          <span class="clima-estado__text">No se pudo cargar el clima.</span>
-          <button class="clima-estado__retry" @click="cargarClima">Reintentar</button>
-        </div>
-
-        <!-- Datos cargados -->
-        <div v-else-if="diaActual" class="weather-grid weather-grid--loaded">
-
-          <!-- Días seleccionables -->
-          <div class="days-card">
-            <div
-              v-for="(dia, i) in forecast"
-              :key="i"
-              class="day-col"
-              :class="{ active: diaSeleccionado === i }"
-              @click="diaSeleccionado = i"
-            >
-              <span class="day-col__label">{{ dia.label }}</span>
-              <span class="day-col__dia">{{ dia.dia }}</span>
-              <span class="day-col__icon">{{ dia.icono }}</span>
-              <div class="day-col__temps">
-                <span class="day-col__max">{{ dia.tempMax }}°</span>
-                <span class="day-col__min">{{ dia.tempMin }}°</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Celdas de condición del día seleccionado -->
-          <div class="weather-cells">
-            <div class="wcell">
-              <span class="wcell__label">Oleaje</span>
-              <span class="wcell__value">{{ diaActual.mar.oleaje }} m</span>
-              <span class="wcell__sub">{{ diaActual.mar.descripcion }} · Dir. {{ diaActual.mar.direccion }}</span>
-              <div class="tide-bar">
-                <div class="tide-bar__fill" :style="{ width: diaActual.mar.barPorcentaje + '%' }"></div>
-              </div>
-            </div>
-            <div class="wcell">
-              <span class="wcell__label">Viento</span>
-              <span class="wcell__value">{{ diaActual.viento.direccion }} · {{ diaActual.viento.velocidad }} km/h</span>
-              <span class="wcell__sub">Ráfagas hasta {{ diaActual.viento.rafagas }} km/h</span>
-            </div>
-            <div class="wcell">
-              <span class="wcell__label">Estado del mar</span>
-              <span class="wcell__value" :class="diaActual.mar.apto ? 'val--green' : 'val--red'">
-                {{ diaActual.mar.apto ? 'Apto' : 'No apto' }}
-              </span>
-              <span class="wcell__sub">Oleaje {{ diaActual.mar.oleaje }} m · {{ diaActual.mar.descripcion }}</span>
-            </div>
-          </div>
-
-        </div>
+        <ClimaPanel />
       </section>
 
 
@@ -239,17 +164,17 @@ import { defineComponent, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import AppLayout from '@/components/Layout/AppLayout.vue'
+import ClimaPanel from '@/components/Dashboard/ClimaPanel.vue'
 import clubService from '@/services/club.service'
 import salidaService from '@/services/salida.service'
 import { useToast } from '@/utils/useToast'
 import { mensajeError, limpiarMensaje } from '@/utils/apiError'
-import { cargarPronostico } from '@/utils/clima'
 
 const DIAS_AVISO_CERT = 60
 
 export default defineComponent({
   name: 'HomeDashboard',
-  components: { AppLayout },
+  components: { AppLayout, ClimaPanel },
 
   setup() {
     const router = useRouter()
@@ -289,7 +214,7 @@ export default defineComponent({
 
     const fechaHoy = computed(() => new Date().toLocaleDateString('es-ES', {
       weekday: 'long', day: 'numeric', month: 'long',
-    }))
+    }).replace(/^./, c => c.toUpperCase()))
 
     // ── Stats ──────────────────────────────────────
     const stats = computed(() => {
@@ -365,40 +290,21 @@ export default defineComponent({
     const avisos = computed(() => {
       const p = panel.value
       if (!p) return []
-      const lista = (p.requisitos.pendientes ?? []).map((m, i) => ({ id: `req-${i}`, tipo: 'amber', mensaje: m, meta: 'Requisito para reservar' }))
+      const lista = (p.requisitos.pendientes ?? []).map((m, i) => ({
+        id: `req-${i}`, tipo: 'amber', mensaje: m, meta: 'Requisito para reservar',
+        ruta: m.includes('membresía') ? '/membresia' : null,
+      }))
       if (cert.value.estado === 'pronto')
-        lista.push({ id: 'cert', tipo: 'amber', mensaje: `Tu certificado médico ${cert.value.sub}. Renuévalo para seguir reservando.`, meta: 'Certificado médico' })
+        lista.push({ id: 'cert', tipo: 'amber', mensaje: `Tu certificado médico ${cert.value.sub}. Renuévalo para seguir reservando.`, meta: 'Certificado médico', ruta: '/perfil' })
       if (p.cuotasPendientes > 0)
-        lista.push({ id: 'cuotas', tipo: 'amber', mensaje: `Tienes ${p.cuotasPendientes} cuota${p.cuotasPendientes !== 1 ? 's' : ''} pendiente${p.cuotasPendientes !== 1 ? 's' : ''} de pago.`, meta: 'Membresía' })
+        lista.push({ id: 'cuotas', tipo: 'amber', mensaje: `Tienes ${p.cuotasPendientes} cuota${p.cuotasPendientes !== 1 ? 's' : ''} pendiente${p.cuotasPendientes !== 1 ? 's' : ''} de pago.`, meta: 'Membresía', ruta: '/membresia' })
       if (p.membresia?.vigente) {
         const dias = diasHasta(p.membresia.fechaFin)
         if (dias <= 30)
-          lista.push({ id: 'memb', tipo: 'cyan', mensaje: `Tu membresía ${p.membresia.tipo.toLowerCase()} vence en ${dias} día${dias !== 1 ? 's' : ''}.`, meta: 'Membresía' })
+          lista.push({ id: 'memb', tipo: 'cyan', mensaje: `Tu membresía ${p.membresia.tipo.toLowerCase()} vence en ${dias} día${dias !== 1 ? 's' : ''}.`, meta: 'Membresía', ruta: '/membresia' })
       }
       return lista
     })
-
-    // ── Clima (utils/clima.js, Open-Meteo) ─────────
-    const diaSeleccionado = ref(0)
-    const forecast        = ref([])
-    const climaCargando   = ref(true)
-    const climaError      = ref(false)
-
-    const cargarClima = async () => {
-      climaCargando.value = true
-      climaError.value    = false
-      try {
-        forecast.value = (await cargarPronostico()).slice(0, 6)
-      } catch (e) {
-        climaError.value = true
-      } finally {
-        climaCargando.value = false
-      }
-    }
-
-    cargarClima()
-
-    const diaActual = computed(() => forecast.value[diaSeleccionado.value] ?? null)
 
     onMounted(cargarPanel)
 
@@ -407,7 +313,6 @@ export default defineComponent({
       nombre, iniciales, nombreCorto, saludo, fechaHoy, anioActual,
       stats, actividadMes, cert,
       proximasSalidas, salidasConCupos, puedeReservar, verSalida, unirseASalida, irAgenda,
-      forecast, diaSeleccionado, diaActual, climaCargando, climaError, cargarClima,
       avisos,
     }
   },
@@ -416,7 +321,6 @@ export default defineComponent({
 
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -424,7 +328,7 @@ export default defineComponent({
    Contenedor principal
 ───────────────────────────────────────────────── */
 .home {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   width: 100%;
   height: 100%;
   overflow-y: auto;
@@ -435,11 +339,11 @@ export default defineComponent({
   scrollbar-width: thin;
   scrollbar-color: var(--surface-border, #e2e8f0) transparent;
 
-  --cyan:   #38bdf8;
-  --indigo: #818cf8;
-  --amber:  #f59e0b;
-  --green:  #22c55e;
-  --red:    #ef4444;
+  --cyan:   var(--ui-cyan);
+  --indigo: var(--ui-indigo);
+  --amber:  var(--ui-amber);
+  --green:  var(--ui-green);
+  --red:    var(--ui-red);
 }
 
 /* ── Sección genérica ─────────────────────────── */
@@ -487,7 +391,6 @@ export default defineComponent({
 .greet__date {
   font-size: 0.72rem;
   color: var(--text-secondary, #64748b);
-  text-transform: capitalize;
   margin-bottom: 4px;
 }
 
@@ -704,214 +607,6 @@ export default defineComponent({
 }
 .next-card__cancel:hover { background: rgba(239, 68, 68, 0.06); }
 
-/* ── Clima ────────────────────────────────────── */
-.weather-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-/* ─── Skeleton shimmer ──────────────────────────── */
-@keyframes shimmer {
-  0%   { background-position: -600px 0; }
-  100% { background-position:  600px 0; }
-}
-
-.sk {
-  border-radius: 5px;
-  background: linear-gradient(
-    90deg,
-    var(--content-bg, #f1f5f9) 25%,
-    var(--surface-bg, #ffffff) 50%,
-    var(--content-bg, #f1f5f9) 75%
-  );
-  background-size: 600px 100%;
-  animation: shimmer 1.4s infinite linear;
-  flex-shrink: 0;
-}
-
-/* Tamaños de los bloques skeleton */
-.sk--label     { width: 28px;  height: 10px; }
-.sk--day       { width: 22px;  height: 28px; border-radius: 5px; }
-.sk--icon      { width: 24px;  height: 24px; border-radius: 50%; }
-.sk--temp      { width: 20px;  height: 12px; }
-.sk--temp-min  { width: 14px;  height: 12px; opacity: 0.6; }
-
-.sk--cell-label { width: 50px;  height: 10px; }
-.sk--cell-value { width: 110px; height: 16px; margin-top: 2px; }
-.sk--cell-sub   { width: 140px; height: 10px; opacity: 0.7; }
-.sk--cell-bar   { width: 100%;  height: 4px;  border-radius: 2px; margin-top: 4px; }
-
-/* Contenedor de temperaturas en skeleton */
-.sk-temps {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-/* El skeleton reutiliza las mismas clases days-card / day-col / weather-cells / wcell
-   del estado cargado, pero los hijos son bloques .sk en lugar de texto */
-.weather-skeleton .day-col {
-  cursor: default;
-  pointer-events: none;
-}
-
-.weather-skeleton .wcell {
-  min-height: 68px;
-}
-
-/* ─── Fade-in al aparecer los datos reales ─────── */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.weather-grid--loaded {
-  animation: fadeInUp 0.4s ease both;
-}
-
-/* ─────────────────────────────────────────────── */
-
-.days-card {
-  background: var(--surface-bg, #ffffff);
-  border: 0.5px solid var(--surface-border, #e2e8f0);
-  border-radius: 10px;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.day-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 14px 6px;
-  cursor: pointer;
-  border-right: 0.5px solid var(--surface-border, #e2e8f0);
-  border-bottom: 3px solid transparent;
-  user-select: none;
-}
-.day-col:last-child { border-right: none; }
-.day-col:hover { background: var(--content-bg, #f8fafc); }
-.day-col.active {
-  background: #fdf6ec;
-  border-bottom-color: #d4922a;
-}
-
-.day-col__label {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.62rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-secondary, #64748b);
-}
-.day-col.active .day-col__label { color: #92622a; }
-
-.day-col__dia {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--text-primary, #0f172a);
-}
-.day-col.active .day-col__dia { color: #7a4f1e; }
-
-.day-col__icon { font-size: 18px; line-height: 1; }
-
-.day-col__temps { display: flex; align-items: baseline; gap: 4px; }
-
-.day-col__max {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--text-primary, #0f172a);
-}
-.day-col.active .day-col__max { color: #7a4f1e; }
-
-.day-col__min { font-size: 0.7rem; color: var(--text-secondary, #64748b); }
-
-/* Celdas de condición */
-.weather-cells {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.wcell {
-  background: var(--surface-bg, #ffffff);
-  border: 0.5px solid var(--surface-border, #e2e8f0);
-  border-radius: 10px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1;
-  justify-content: center;
-}
-
-.wcell__label {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.62rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-secondary, #64748b);
-}
-
-.wcell__value {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-primary, #0f172a);
-  margin-top: 2px;
-}
-
-.wcell__sub { font-size: 0.68rem; color: var(--text-secondary, #64748b); }
-
-.val--green { color: var(--green) !important; }
-.val--red   { color: var(--red)   !important; }
-
-/* Estado error */
-.clima-estado {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 20px;
-  background: var(--surface-bg, #ffffff);
-  border: 0.5px solid var(--surface-border, #e2e8f0);
-  border-radius: 10px;
-}
-.clima-estado--error { border-color: var(--red, #ef4444); }
-.clima-estado__text  { font-size: 0.8rem; color: var(--text-secondary, #64748b); }
-.clima-estado__retry {
-  background: none;
-  border: 0.5px solid var(--cyan, #38bdf8);
-  border-radius: 6px;
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--cyan, #38bdf8);
-  cursor: pointer;
-}
-
-/* Barra de marea */
-.tide-bar {
-  height: 4px;
-  background: var(--surface-border, #e2e8f0);
-  border-radius: 2px;
-  margin-top: 6px;
-  overflow: hidden;
-}
-.tide-bar__fill {
-  height: 100%;
-  border-radius: 2px;
-  background: var(--cyan);
-  transition: width 0.6s ease;
-}
-
 /* ── Salidas V6 ───────────────────────────────── */
 .salidas-list { display: flex; flex-direction: column; gap: 6px; }
 
@@ -1046,7 +741,6 @@ export default defineComponent({
 /* ── Responsive ───────────────────────────────── */
 @media (max-width: 860px) {
   .stats-row    { grid-template-columns: 1fr 1fr; }
-  .weather-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
@@ -1079,4 +773,17 @@ export default defineComponent({
 .link-btn:hover { text-decoration: underline; }
 
 .salida-row__btn:disabled { opacity: 0.5; cursor: wait; }
+
+.aviso__accion {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ui-cyan);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 7px;
+}
+.aviso__accion:hover { background: var(--ui-cyan-dim); }
 </style>

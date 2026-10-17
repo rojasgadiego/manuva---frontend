@@ -15,8 +15,14 @@
       <div v-if="cargando" class="grid">
         <div v-for="i in 3" :key="i" class="ui-card ui-skeleton"></div>
       </div>
-      <div v-else-if="!visibles.length" class="ui-card ui-empty">
-        {{ vista === 'proximos' ? 'No hay eventos próximos.' : 'Aún no hay eventos registrados.' }}
+      <div v-else-if="!visibles.length" class="ui-card">
+        <EmptyState
+          :icono="Trophy"
+          :titulo="vista === 'proximos' ? 'No hay eventos próximos' : 'Aún no hay eventos registrados'"
+          texto="Cuando la directiva publique una regata o encuentro, podrás inscribirte desde aquí."
+        >
+          <button v-if="vista === 'proximos'" class="ui-btn ui-btn--ghost" @click="vista = 'todos'">Ver eventos anteriores</button>
+        </EmptyState>
       </div>
 
       <div v-else class="grid">
@@ -40,13 +46,15 @@
 <script>
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/Layout/AppLayout.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import { Trophy } from 'lucide-vue-next'
 import eventoService, { claseEstadoEvento } from '@/services/evento.service'
 import { useToast } from '@/utils/useToast'
 import { mensajeError } from '@/utils/apiError'
 
 export default defineComponent({
   name: 'EventosView',
-  components: { AppLayout },
+  components: { AppLayout, EmptyState },
 
   setup() {
     const { mostrarToast } = useToast()
@@ -74,7 +82,7 @@ export default defineComponent({
       }
     })
 
-    return { vista, visibles, cargando, dia, mes, claseEstadoEvento }
+    return { vista, visibles, cargando, dia, mes, claseEstadoEvento, Trophy }
   },
 })
 </script>

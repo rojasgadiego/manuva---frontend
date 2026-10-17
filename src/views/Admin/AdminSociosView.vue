@@ -20,7 +20,7 @@
         <div v-if="cargando" class="ui-skeleton"></div>
         <div v-else-if="!visibles.length" class="ui-empty">No hay socios que coincidan.</div>
         <div v-else class="ui-table-wrap">
-          <table class="ui-table">
+          <table class="ui-table ui-table--stack">
             <thead>
               <tr>
                 <th>Socio</th>
@@ -32,17 +32,17 @@
             </thead>
             <tbody>
               <tr v-for="r in visibles" :key="r.id">
-                <td>
+                <td class="ui-celda-titulo" data-label="Socio">
                   <span class="nombre">{{ r.nombreCompleto }}</span>
                   <span class="ui-muted rut">{{ r.rut }} · {{ r.email }}</span>
                 </td>
-                <td>{{ r.categoria }}<span v-if="r.estado !== 'Activo'" class="ui-chip ui-chip--muted estado">{{ r.estado }}</span></td>
-                <td>
-                  <span class="ui-chip" :class="claseMembresia(r.estadoMembresia)">{{ r.estadoMembresia }}</span>
-                  <span v-if="r.estadoMembresia === 'Vigente' && r.diasParaVencer != null" class="ui-muted dias">{{ r.diasParaVencer }} d</span>
+                <td data-label="Categoría"><span>{{ r.categoria }}<span v-if="r.estado !== 'Activo'" class="ui-chip ui-chip--muted estado">{{ r.estado }}</span></span></td>
+                <td data-label="Membresía">
+                  <span><span class="ui-chip" :class="claseMembresia(r.estadoMembresia)">{{ r.estadoMembresia }}</span>
+                  <span v-if="r.estadoMembresia === 'Vigente' && r.diasParaVencer != null" class="ui-muted dias">{{ r.diasParaVencer }} d</span></span>
                 </td>
-                <td><span class="ui-chip" :class="claseCert(r.estadoCertMedica)">{{ r.estadoCertMedica }}</span></td>
-                <td class="ui-num"><button class="ui-btn ui-btn--ghost ui-btn--sm" @click="abrir(r)">Gestionar</button></td>
+                <td data-label="Cert. médico"><span class="ui-chip" :class="claseCert(r.estadoCertMedica)">{{ r.estadoCertMedica }}</span></td>
+                <td class="ui-num" data-label=""><button class="ui-btn ui-btn--ghost ui-btn--sm" @click="abrir(r)">Gestionar</button></td>
               </tr>
             </tbody>
           </table>

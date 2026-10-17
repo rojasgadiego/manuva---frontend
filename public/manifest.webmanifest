@@ -1,0 +1,14 @@
+{
+  "name": "Manuva — Club de Canotaje",
+  "short_name": "Manuva",
+  "description": "Reserva salidas, únete a la tripulación y gestiona tu membresía.",
+  "lang": "es",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c0e14",
+  "theme_color": "#0c0e14",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

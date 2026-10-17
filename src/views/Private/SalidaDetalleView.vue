@@ -184,7 +184,7 @@ export default defineComponent({
       return {
         dia:    d.getDate(),
         mes:    d.toLocaleDateString('es-CL', { month: 'short' }).replace('.', ''),
-        semana: d.toLocaleDateString('es-CL', { weekday: 'long' }),
+        semana: d.toLocaleDateString('es-CL', { weekday: 'long' }).replace(/^./, c => c.toUpperCase()),
         hora:   horaDe(d),
       }
     })
@@ -331,7 +331,7 @@ export default defineComponent({
 .fecha__dia { font-size: 1.6rem; font-weight: 700; line-height: 1; }
 .fecha__mes { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
 .cabecera__info { flex: 1; min-width: 0; }
-.cabecera__sup { font-size: 0.78rem; color: var(--text-secondary, #64748b); text-transform: capitalize; }
+.cabecera__sup { font-size: 0.78rem; color: var(--text-secondary, #64748b); }
 .cabecera__titulo {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 1.35rem; font-weight: 700; letter-spacing: -0.3px;

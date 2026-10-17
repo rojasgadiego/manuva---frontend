@@ -97,7 +97,7 @@ export default defineComponent({
 
     // ── Calendario ────────────────────────────────
     const monthYearLabel = computed(() =>
-      currentMonth.value.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+      currentMonth.value.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase())
     )
 
     const buildDay = (date, currentMonthFlag) => {

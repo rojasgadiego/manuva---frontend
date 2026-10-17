@@ -45,11 +45,11 @@
         </ul>
 
         <!-- Botón hamburguesa -->
-        <div class="nav-toggle" :class="{ active: isMenuOpen }" @click="toggleMenu">
+        <button type="button" class="nav-toggle" :class="{ active: isMenuOpen }" :aria-expanded="isMenuOpen" aria-label="Abrir menú" @click="toggleMenu">
           <span class="bar"></span>
           <span class="bar"></span>
           <span class="bar"></span>
-        </div>
+        </button>
 
       </div>
     </nav>
@@ -321,6 +321,8 @@ export default {
 
 /* ── Hamburguesa ── */
 .nav-toggle {
+  background: none;
+  border: none;
   display: none;
   flex-direction: column;
   cursor: pointer;

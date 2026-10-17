@@ -49,9 +49,14 @@
 
         <!-- Cuotas -->
         <section class="ui-card ui-card--flush">
-          <div v-if="!datos.cuotas.length" class="ui-empty">No tienes cuotas registradas.</div>
+          <EmptyState
+            v-if="!datos.cuotas.length"
+            :icono="CreditCard"
+            titulo="No tienes cuotas registradas"
+            texto="Las cuotas se generan cada mes para las membresías vigentes."
+          />
           <div v-else class="ui-table-wrap">
-            <table class="ui-table">
+            <table class="ui-table ui-table--stack">
               <thead>
                 <tr>
                   <th>Periodo</th>
@@ -63,16 +68,16 @@
               </thead>
               <tbody>
                 <tr v-for="c in datos.cuotas" :key="c.idCuota" :class="{ resaltada: c.idCuota === cuotaResaltada }">
-                  <td class="periodo">{{ periodo(c.periodo) }}</td>
-                  <td>{{ fecha(c.fechaVencimiento) }}</td>
-                  <td class="ui-num">{{ clp(c.monto) }}</td>
-                  <td>
-                    <span class="ui-chip" :class="claseEstadoCuota(c.estado)">{{ c.estado }}</span>
+                  <td class="periodo" data-label="Periodo">{{ periodo(c.periodo) }}</td>
+                  <td data-label="Vence">{{ fecha(c.fechaVencimiento) }}</td>
+                  <td class="ui-num" data-label="Monto">{{ clp(c.monto) }}</td>
+                  <td data-label="Estado">
+                    <span><span class="ui-chip" :class="claseEstadoCuota(c.estado)">{{ c.estado }}</span>
                     <span v-if="c.fechaPago" class="ui-muted pagado-el">
                       {{ new Date(c.fechaPago).toLocaleDateString('es-CL') }}{{ c.metodoPago ? ` · ${c.metodoPago}` : '' }}
-                    </span>
+                    </span></span>
                   </td>
-                  <td class="ui-num">
+                  <td class="ui-num" data-label="">
                     <button
                       v-if="c.pagable"
                       class="ui-btn ui-btn--primary ui-btn--sm"
@@ -94,6 +99,8 @@
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/Layout/AppLayout.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import { CreditCard } from 'lucide-vue-next'
 import membresiaService, { irAWebpay } from '@/services/membresia.service'
 import { useToast } from '@/utils/useToast'
 import { mensajeError } from '@/utils/apiError'
@@ -108,7 +115,7 @@ const RESULTADOS = {
 
 export default defineComponent({
   name: 'MembresiaView',
-  components: { AppLayout },
+  components: { AppLayout, EmptyState },
 
   setup() {
     const route  = useRoute()
@@ -154,7 +161,7 @@ export default defineComponent({
     return {
       datos, cargando, pagando, resultadoPago, cuotaResaltada,
       pendientes, totalPendiente, pagar,
-      clp, fecha, periodo, claseEstadoCuota,
+      clp, fecha, periodo, claseEstadoCuota, CreditCard,
     }
   },
 })
