@@ -31,6 +31,19 @@
         <p class="notice__hint">Regulariza estos puntos con la directiva del club.</p>
       </div>
 
+      <!-- Pronóstico del día (Open-Meteo) -->
+      <div v-if="clima" class="clima" :class="{ 'clima--alerta': !clima.mar.apto }">
+        <span class="clima__icono" aria-hidden="true">{{ clima.icono }}</span>
+        <div class="clima__info">
+          <p class="clima__titulo">{{ clima.desc }} · {{ clima.tempMax }}° / {{ clima.tempMin }}°</p>
+          <p class="clima__meta">Oleaje {{ clima.mar.oleaje }} m ({{ clima.mar.descripcion }}) · Viento {{ clima.viento.direccion }} {{ clima.viento.velocidad }} km/h</p>
+        </div>
+        <span class="chip" :class="clima.mar.apto ? 'chip--estado' : 'chip--alerta'">{{ clima.mar.apto ? 'Mar apto' : 'Mar no apto' }}</span>
+      </div>
+      <p v-if="clima && !clima.mar.apto" class="notice notice--warn">
+        El pronóstico indica oleaje sobre 1,5 m. Considera otro día: la salida podría suspenderse por seguridad.
+      </p>
+
       <!-- ① Salidas del día -->
       <div class="field-block">
         <label class="field-label">Salidas de este día</label>
@@ -257,6 +270,7 @@ import salidaService from '@/services/salida.service'
 import clubService   from '@/services/club.service'
 import { useToast }  from '@/utils/useToast'
 import { mensajeError, limpiarMensaje } from '@/utils/apiError'
+import { cargarPronostico } from '@/utils/clima'
 
 const pad = (n) => String(n).padStart(2, '0')
 
@@ -285,6 +299,7 @@ export default defineComponent({
     const cargandoCanoas = ref(false)
     const enviando      = ref(false)
     const accionEnCurso = ref(null)
+    const clima         = ref(null)
 
     const onCanoeScroll = (e) => {
       const el = e.target
@@ -344,8 +359,17 @@ export default defineComponent({
     const isFormValid = computed(() => puedeCrear.value && localForm.hora !== '' && localForm.canoa !== null)
 
     // ── Carga de datos ────────────────────────────────
+    // El clima es opcional: si Open-Meteo falla, el panel funciona igual sin él
+    const cargarClima = async () => {
+      clima.value = null
+      try {
+        clima.value = (await cargarPronostico()).find(d => d.fecha === props.selectedDay?.date) ?? null
+      } catch { clima.value = null }
+    }
+
     const cargarDia = async () => {
       if (!props.selectedDay) return
+      cargarClima()
       cargandoDia.value = true
       try {
         const res = await salidaService.getDia(props.selectedDay.date)
@@ -448,7 +472,7 @@ export default defineComponent({
     return {
       showTimeline, showFade, canoeScroll, onCanoeScroll,
       duraciones, localForm, dateLabel,
-      dia, cargandoDia, salidasDia, puedeCrear,
+      dia, cargandoDia, salidasDia, puedeCrear, clima,
       canoas, cargandoCanoas, enviando, accionEnCurso,
       hora, esFutura, puedeUnirse,
       availableTimes, salidasPorHora, selectHour, isFormValid,
@@ -1059,6 +1083,22 @@ export default defineComponent({
   0%, 100% { opacity: 0.45; }
   50%      { opacity: 0.8; }
 }
+
+.clima {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 0.5px solid var(--surface-border, #e2e8f0);
+  background: var(--surface-bg, #ffffff);
+}
+.clima--alerta { border-color: rgba(239, 68, 68, 0.35); }
+.clima__icono { font-size: 1.6rem; line-height: 1; }
+.clima__info { flex: 1; min-width: 0; }
+.clima__titulo { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 600; font-size: 0.86rem; color: var(--text-primary, #0f172a); }
+.clima__meta { font-size: 0.72rem; color: var(--text-secondary, #64748b); }
+.chip--alerta { background: var(--red-dim); color: var(--red); }
 
 @media (max-width: 600px) {
   .day-item { grid-template-columns: 48px 1fr; }

@@ -145,10 +145,16 @@ export default {
 
     // ── Menú ──────────────────────────────────────────────
     const menuItems = [
-      { name: 'Dashboard', path: '/dashboard', icon: '📊' },
-      { name: 'Agenda',   path: '/agenda',    icon: '🛶' },
-      { name: 'Historial', path: '/historial',  icon: '📚' },
-      { name: 'Mi perfil', path: '/perfil',    icon: '👤' },
+      { name: 'Dashboard',  path: '/dashboard',  icon: '📊' },
+      { name: 'Agenda',     path: '/agenda',     icon: '🛶' },
+      { name: 'Eventos',    path: '/eventos',    icon: '🏆' },
+      { name: 'Historial',  path: '/historial',  icon: '📚' },
+      { name: 'Membresía',  path: '/membresia',  icon: '💳' },
+      { name: 'Mi perfil',  path: '/perfil',     icon: '👤' },
+      { name: 'Muelle',     path: '/muelle',         icon: '⚓', roles: ['Administrador', 'Entrenador'] },
+      { name: 'Socios',     path: '/admin/socios',   icon: '👥', roles: ['Administrador', 'Directiva'] },
+      { name: 'Cobranza',   path: '/admin/cobranza', icon: '🧾', roles: ['Administrador', 'Directiva'] },
+      { name: 'Flota',      path: '/admin/flota',    icon: '🔧', roles: ['Administrador', 'Entrenador'] },
     ]
 
     // item.roles: si se define, el ítem solo se muestra a esos roles

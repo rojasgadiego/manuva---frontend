@@ -4,7 +4,6 @@ import store from '@/store'
 // Importar vistas
 import Home from '@/views/HomeView.vue'
 import Login from '@/views/autenticacion/LoginView.vue'
-//import Register from '@/views/autenticacion/RegisterView.vue'
 import NotFound from '@/views/NotFoundView.vue'
 import Forbidden from '@/views/ForbiddenView.vue'
 import DashboardView from '@/views/Private/DashboardView.vue'
@@ -34,15 +33,18 @@ const routes = [
       title: 'Iniciar Sesión'
     }
   },
-  // {
-  //   path: '/register',
-  //   name: 'Register',
-  //   component: Register,
-  //   meta: { 
-  //     requiresAuth: false,
-  //     title: 'Registro'
-  //   }
-  // },
+  {
+    path: '/registro',
+    name: 'Register',
+    component: () => import('@/views/autenticacion/RegisterView.vue'),
+    meta: { requiresAuth: false, title: 'Registro' }
+  },
+  {
+    path: '/recuperar-password',
+    name: 'RecuperarPassword',
+    component: () => import('@/views/autenticacion/RecuperarPasswordView.vue'),
+    meta: { requiresAuth: false, title: 'Recuperar contraseña' }
+  },
   // Rutas autenticadas (requieren login)
   {
     path: '/dashboard',
@@ -70,6 +72,49 @@ const routes = [
       requiresAuth: true,
       title: 'Detalle de salida'
     }
+  },
+  {
+    path: '/eventos',
+    name: 'Eventos',
+    component: () => import('@/views/Private/EventosView.vue'),
+    meta: { requiresAuth: true, title: 'Eventos' }
+  },
+  {
+    path: '/eventos/:id(\\d+)',
+    name: 'EventoDetalle',
+    component: () => import('@/views/Private/EventoDetalleView.vue'),
+    meta: { requiresAuth: true, title: 'Evento' }
+  },
+  {
+    path: '/membresia',
+    name: 'Membresia',
+    component: () => import('@/views/Private/MembresiaView.vue'),
+    meta: { requiresAuth: true, title: 'Mi membresía' }
+  },
+  // Gestión: meta.roles restringe el acceso (el guard redirige a /forbidden)
+  {
+    path: '/muelle',
+    name: 'Muelle',
+    component: () => import('@/views/Admin/MuelleView.vue'),
+    meta: { requiresAuth: true, title: 'Muelle', roles: ['Administrador', 'Entrenador'] }
+  },
+  {
+    path: '/admin/socios',
+    name: 'AdminSocios',
+    component: () => import('@/views/Admin/AdminSociosView.vue'),
+    meta: { requiresAuth: true, title: 'Socios', roles: ['Administrador', 'Directiva'] }
+  },
+  {
+    path: '/admin/cobranza',
+    name: 'AdminCobranza',
+    component: () => import('@/views/Admin/AdminCobranzaView.vue'),
+    meta: { requiresAuth: true, title: 'Cobranza', roles: ['Administrador', 'Directiva'] }
+  },
+  {
+    path: '/admin/flota',
+    name: 'AdminFlota',
+    component: () => import('@/views/Admin/AdminFlotaView.vue'),
+    meta: { requiresAuth: true, title: 'Flota', roles: ['Administrador', 'Entrenador'] }
   },
   {
     path: '/historial',
@@ -153,6 +198,13 @@ router.beforeEach(async (to, from, next) => {
       query: { redirect: to.fullPath }
     })
 
+    return
+  }
+
+  // Rutas de gestión: la API también valida el rol; esto evita mostrar pantallas inútiles
+  const roles = to.matched.flatMap(record => record.meta.roles ?? [])
+  if (roles.length && !roles.includes(store.getters['auth/userRole'])) {
+    next({ name: 'Forbidden' })
     return
   }
 

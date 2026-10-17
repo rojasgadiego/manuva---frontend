@@ -243,6 +243,7 @@ import clubService from '@/services/club.service'
 import salidaService from '@/services/salida.service'
 import { useToast } from '@/utils/useToast'
 import { mensajeError, limpiarMensaje } from '@/utils/apiError'
+import { cargarPronostico } from '@/utils/clima'
 
 const DIAS_AVISO_CERT = 60
 
@@ -307,6 +308,7 @@ export default defineComponent({
 
     // Estado del certificado médico: sin registro / vencido / vence pronto / al día
     const cert = computed(() => {
+      if (store.getters['auth/idRemador'] == null) return { texto: '—', estado: 'ok', sub: 'no aplica' }
       const vence = panel.value?.certMedicaVence
       if (!vence) return { texto: 'Sin registro', estado: 'vencido', sub: 'regulariza con el club' }
       const dias = diasHasta(vence)
@@ -376,105 +378,18 @@ export default defineComponent({
       return lista
     })
 
-    // ── Clima — Open-Meteo ─────────────────────────
-    const COORDS = { lat: -29.95, lon: -71.34, ubicacion: 'Coquimbo, IV Región' }
-
+    // ── Clima (utils/clima.js, Open-Meteo) ─────────
     const diaSeleccionado = ref(0)
     const forecast        = ref([])
     const climaCargando   = ref(true)
     const climaError      = ref(false)
 
-    const WMO_ICONS = {
-      0: '☀️', 1: '🌤', 2: '⛅', 3: '☁️',
-      45: '🌫', 48: '🌫',
-      51: '🌦', 53: '🌦', 55: '🌧',
-      61: '🌧', 63: '🌧', 65: '🌧',
-      71: '🌨', 73: '🌨', 75: '🌨',
-      80: '🌦', 81: '🌧', 82: '⛈',
-      95: '⛈', 96: '⛈', 99: '⛈',
-    }
-    const WMO_DESC = {
-      0: 'Despejado', 1: 'Mayormente sol', 2: 'Parcial nublado', 3: 'Nublado',
-      45: 'Niebla', 48: 'Niebla',
-      51: 'Llovizna leve', 53: 'Llovizna', 55: 'Llovizna intensa',
-      61: 'Lluvia leve', 63: 'Lluvia', 65: 'Lluvia intensa',
-      71: 'Nieve leve', 73: 'Nieve', 75: 'Nieve intensa',
-      80: 'Chubascos', 81: 'Chubascos', 82: 'Chubascos fuertes',
-      95: 'Tormenta', 96: 'Tormenta', 99: 'Tormenta fuerte',
-    }
-
-    const gradosADireccion = (deg) => {
-      const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO']
-      return dirs[Math.round(deg / 22.5) % 16]
-    }
-
-    const estadoMar = (oleaje) => {
-      if (oleaje < 0.5)  return { descripcion: 'muy calmo',       apto: true  }
-      if (oleaje < 1.0)  return { descripcion: 'calmo',           apto: true  }
-      if (oleaje < 1.5)  return { descripcion: 'algo de oleaje',  apto: true  }
-      if (oleaje < 2.0)  return { descripcion: 'oleaje moderado', apto: false }
-      return               { descripcion: 'agitado',             apto: false }
-    }
-
-    const oleajeAPorcentaje = (oleaje) => Math.min(Math.round((oleaje / 3) * 100), 100)
-
-    const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
-
     const cargarClima = async () => {
       climaCargando.value = true
       climaError.value    = false
       try {
-        const [resForecast, resMarine] = await Promise.all([
-          fetch(
-            `https://api.open-meteo.com/v1/forecast` +
-            `?latitude=${COORDS.lat}&longitude=${COORDS.lon}` +
-            `&daily=weathercode,temperature_2m_max,temperature_2m_min,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant` +
-            `&hourly=windspeed_10m,winddirection_10m` +
-            `&timezone=auto&forecast_days=6`
-          ),
-          fetch(
-            `https://marine-api.open-meteo.com/v1/marine` +
-            `?latitude=${COORDS.lat}&longitude=${COORDS.lon}` +
-            `&daily=wave_height_max,wave_direction_dominant` +
-            `&hourly=wave_height,swell_wave_height` +
-            `&timezone=auto&forecast_days=6`
-          ),
-        ])
-
-        const [fw, fm] = await Promise.all([resForecast.json(), resMarine.json()])
-
-        forecast.value = fw.daily.time.map((fecha, i) => {
-          const date    = new Date(fecha + 'T12:00:00')
-          const esHoy   = i === 0
-          const label   = esHoy ? 'Hoy' : DIAS[date.getDay()]
-          const dia     = String(date.getDate())
-          const wmo     = fw.daily.weathercode[i]
-          const oleaje  = fm.daily.wave_height_max?.[i] ?? 0
-          const marInfo = estadoMar(oleaje)
-
-          return {
-            label,
-            dia,
-            icono:   WMO_ICONS[wmo]  ?? '🌡',
-            desc:    WMO_DESC[wmo]   ?? 'Variable',
-            tempMax: Math.round(fw.daily.temperature_2m_max[i]),
-            tempMin: Math.round(fw.daily.temperature_2m_min[i]),
-            viento: {
-              direccion: gradosADireccion(fw.daily.winddirection_10m_dominant[i]),
-              velocidad: Math.round(fw.daily.windspeed_10m_max[i]),
-              rafagas:   Math.round(fw.daily.windgusts_10m_max[i]),
-            },
-            mar: {
-              apto:         marInfo.apto,
-              oleaje:       oleaje.toFixed(1),
-              descripcion:  marInfo.descripcion,
-              direccion:    gradosADireccion(fm.daily.wave_direction_dominant?.[i] ?? 0),
-              barPorcentaje: oleajeAPorcentaje(oleaje),
-            },
-          }
-        })
+        forecast.value = (await cargarPronostico()).slice(0, 6)
       } catch (e) {
-        console.error('Error cargando clima:', e)
         climaError.value = true
       } finally {
         climaCargando.value = false

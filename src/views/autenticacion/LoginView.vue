@@ -22,6 +22,7 @@
 
       <!-- Volver al inicio -->
       <footer class="links">
+        <p class="signup">¿Aún no eres socio? <router-link to="/registro">Crea tu cuenta</router-link></p>
         <router-link to="/" class="back-link">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
@@ -48,8 +49,7 @@ export default {
   },
   methods: {
     handleForgot() {
-      // this.$router.push('/recuperar-password')
-      alert('Funcionalidad por implementar')
+      this.$router.push('/recuperar-password')
     }
   },
   mounted() {
@@ -201,6 +201,15 @@ export default {
 }
 
 .back-link:hover { color: rgba(255,255,255,0.6); }
+
+.signup {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.45);
+  margin: 0 0 12px;
+}
+.signup a { color: rgba(116,232,160,0.8); text-decoration: none; }
+.signup a:hover { color: #74e8a0; }
 
 /* ── Marca de agua polinesio ── */
 .tribal-watermark {

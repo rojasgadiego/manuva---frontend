@@ -1,0 +1,94 @@
+/* Formularios de autenticación (registro, verificación, recuperación) sobre AuthCard. */
+
+.af-form { display: flex; flex-direction: column; gap: 16px; font-family: 'DM Sans', sans-serif; }
+
+.af-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.af-grid .af-full { grid-column: 1 / -1; }
+
+.af-field { display: flex; flex-direction: column; gap: 6px; }
+
+.af-label { font-size: 0.78rem; color: rgba(255, 255, 255, 0.55); letter-spacing: 0.3px; }
+
+.af-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  color-scheme: dark;
+}
+.af-input::placeholder { color: rgba(255, 255, 255, 0.25); }
+.af-input:focus {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(116, 232, 160, 0.45);
+  box-shadow: 0 0 0 3px rgba(116, 232, 160, 0.08);
+}
+.af-input[aria-invalid="true"] { border-color: rgba(239, 100, 100, 0.55); }
+.af-input option { color: #0f172a; }
+
+.af-codigo {
+  text-align: center;
+  font-size: 1.6rem;
+  letter-spacing: 10px;
+  font-weight: 500;
+}
+
+.af-error { font-size: 0.74rem; color: #f87171; margin: 0; }
+.af-hint  { font-size: 0.74rem; color: rgba(255, 255, 255, 0.4); margin: 0; }
+
+.af-alert {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  background: rgba(239, 100, 100, 0.1);
+  border: 1px solid rgba(239, 100, 100, 0.25);
+  color: #fca5a5;
+}
+.af-alert--ok {
+  background: rgba(116, 232, 160, 0.08);
+  border-color: rgba(116, 232, 160, 0.25);
+  color: #a7f3d0;
+}
+
+.af-submit {
+  width: 100%;
+  min-height: 46px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1d7850, #0d4a5c);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(29, 120, 80, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+.af-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(29, 120, 80, 0.45); }
+.af-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.af-submit:focus-visible, .af-link:focus-visible { outline: 2px solid #74e8a0; outline-offset: 2px; }
+
+.af-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgba(116, 232, 160, 0.8);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+.af-link:hover { color: #74e8a0; }
+.af-link:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.af-center { text-align: center; }
+
+@media (max-width: 480px) {
+  .af-grid { grid-template-columns: 1fr; }
+}
